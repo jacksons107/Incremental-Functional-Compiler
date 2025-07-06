@@ -1,2 +1,4 @@
-(test
- (name test_compiler))
+(tests
+ (names test_compiler test_lam_to_comb)
+ (libraries compiler))
+

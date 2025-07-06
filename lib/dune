@@ -1,2 +1,4 @@
 (library
- (name compiler))
+ (name compiler)
+ (wrapped false))
+ ; (modules lam comb lam_to_comb))
