@@ -1,0 +1,34 @@
+# Bytecode and native output
+*.cmo
+*.cmi
+*.cma
+*.cmx
+*.cmxa
+*.o
+*.out
+
+# utop history
+.utop-history
+
+# Top-level script outputs
+*.annot
+
+# Executables
+main
+*.native
+*.byte
+
+# Dune build system (if you start using it)
+_build/
+*.install
+*.merlin
+.dune
+.dune-cache/
+.dune-project.lock
+
+# Editor/IDE files
+*.swp
+*.swo
+*~
+.DS_Store
+*.vscode/
