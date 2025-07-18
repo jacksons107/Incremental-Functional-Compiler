@@ -14,13 +14,16 @@ let rec pp_comb = function
       let pa = match a with CApp _ -> "(" ^ pp_comb a ^ ")" | _ -> pp_comb a in
       pf ^ " " ^ pa
 
+
+(* (+ 2 3) *)
+(* let add23 = (LApp ((LApp (LPlus, (LInt 2))), (LInt 3))) *)
 (* (+ x x) *)
 let double = (LApp ((LApp (LPlus, (LVar "x"))), (LVar "x")))
-(* (lambda (x) (+ x 3)) *)
+(* (lambda (x) (+ x x)) *)
 let lam_double = (Lam ("x", double))
-(* ((lambda (x) (+ x 3)) 4) *)
-let prog = (LApp (lam_double, (LInt 5)))
+(* ((lambda (x) (+ x x)) 5) *)
+let prog = (LApp (lam_double, LInt 5))
+(* ((lambda (x) (+ x x)) (+ 2 3)) *)
+(* let prog = (LApp (lam_double, add23)) *)
 
-
-let () = print_endline (pp_comb (lam_to_comb prog))
-
+let () = print_endline ("(" ^ (pp_comb (lam_to_comb prog)) ^ ")")
