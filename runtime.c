@@ -81,8 +81,7 @@ Node *eval_add() {
 
 Node *app_global(Node *global) {
     // call function which returns a Node back to the stack
-    global->code();
-    return stack_pop();
+    return global->code();
 }
 
 Node *unwind(Node *node) {
@@ -112,10 +111,10 @@ void reduce() {
     while (1) {
         Node *root = stack_peak();
         Node *result = unwind(root);
+        *root = *mk_ind(result);
         if (result->tag == NODE_INT) {
             return;
         }
-        *root = *mk_ind(result);
     }
 }
 
@@ -127,7 +126,13 @@ void print_node(Node *node) {
         print_node(node->result);
     }
     else {
-        printf("Trying to print invalid node type.\n");
+        printf("Trying to print invalid node type: ");
+        if (node->tag == NODE_APP) {
+            printf("APP\n");
+        }
+        else {
+            printf("GLOBAL\n");
+        }
     }
 }
 
