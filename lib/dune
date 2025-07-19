@@ -1,4 +1,8 @@
 (library
  (name compiler)
  (wrapped false))
- ; (modules lam comb lam_to_comb))
+
+(menhir
+ (modules parser))
+
+(ocamllex lexer)

@@ -1,13 +1,19 @@
-open Lam
+open Ast_to_lam
 open Lam_to_comb
 open Comb_to_j
 open J_machine
 
-(* (+ (+ 2 3) 4) *)
-let lam_expr = LApp ((LApp (LPlus, (LApp ((LApp (LPlus, LInt 2)), LInt 3)))), LInt 4)
-let comb_expr = lam_to_comb lam_expr
-let j_code = comb_to_j comb_expr
-let entry = run_j_machine j_code
+let parse s =
+    let lexbuf = Lexing.from_string s in
+    let ast = Parser.prog Lexer.read lexbuf in
+    ast
+
+let compile exp =
+    run_j_machine (comb_to_j (lam_to_comb (ast_to_lam (parse exp))))
+
+
+let exp = "2 + 3 + 4"
+let entry = compile exp
 
 let () =
   let oc = open_out "generated.c" in
