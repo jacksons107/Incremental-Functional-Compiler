@@ -1,4 +1,5 @@
-open Ast_to_lam
+open Ast_to_elam
+open Elam_to_lam
 open Lam_to_comb
 open Comb_to_j
 open J_machine
@@ -9,10 +10,10 @@ let parse s =
     ast
 
 let compile exp =
-    run_j_machine (comb_to_j (lam_to_comb (ast_to_lam (parse exp))))
+    run_j_machine (comb_to_j (lam_to_comb (elam_to_lam (ast_to_elam (parse exp)))))
 
 
-let exp = "2 + 3 + 4"
+let exp = "2 + 3 + (-4)"
 let entry = compile exp
 
 let () =
