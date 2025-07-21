@@ -106,8 +106,6 @@ Node *app_global(Node *global) {
 }
 
 Node *unwind(Node *node) {
-    // printf("Unwinding:\n");
-    // print_node(node);
     switch (node->tag) {
         case NODE_INT:
             return node;
@@ -132,11 +130,10 @@ Node *unwind(Node *node) {
 
 void reduce() {
     while (1) {
-        Node *root = stack_peak();
-        // printf("Reducing:\n");
-        // print_node(root);
+        Node *root = stack_pop();
         Node *result = unwind(root);
         *root = *mk_ind(result);
+        stack_push(result);
         if (result->tag == NODE_INT) {
             return;
         }
@@ -156,7 +153,7 @@ void print_node(Node *node, int indent) {
         printf("%lld\n", node->val);
     }
     else if (node->tag == NODE_IND) {
-        print_indent(indent, "");
+        print_indent(indent, "IND ->");
         print_node(node->result, indent + 1);
     }
     else if (node->tag == NODE_APP) {
@@ -188,11 +185,7 @@ void print_stack() {
 int main(int argc, char **argv)
 {
     entry();
-    printf("After entry:\n");
-    print_stack();
     reduce();
-    printf("After reduce:\n");
-    print_stack();
     print_node(stack_pop(), 1);
     return 0;
 }

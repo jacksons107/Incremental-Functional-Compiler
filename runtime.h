@@ -80,6 +80,7 @@ Node *unwind(Node *node);
    push final output to the top of the stack */
 void reduce();
 
+/* helper that creates indents to create the node graph in print_node */
 void print_indent(int indent, const char *prefix);
 
 /* prints the value of a node*/
