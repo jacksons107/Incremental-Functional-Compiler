@@ -4,6 +4,9 @@ open J_machine
 let rec comb_to_j exp = match exp with
     | CInt n        -> [INT n]
     | CPlus         -> [GLOBAL (2, ADD)]
+    | I             -> [GLOBAL (1, I)]
+    | K             -> [GLOBAL (2, K)]
+    | S             -> [GLOBAL (3, S)]
     | CApp (e1, e2) -> comb_to_j e2 @ comb_to_j e1 @ [APP]
     | _             -> failwith "unimplemented"
 

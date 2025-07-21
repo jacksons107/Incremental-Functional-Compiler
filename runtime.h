@@ -21,6 +21,7 @@ typedef struct Node {
         struct {                   // NODE_GLOBAL
             int64_t arity;
             struct Node*(*code)();
+            char *name;
         };
         struct Node *result;       // NODE_IND
     };
@@ -36,7 +37,7 @@ extern int sp;
 Node *mk_int(int64_t val);
 
 /* makes a global node and returns a pointer to it to be pushed onto the stack */
-Node *mk_global(int64_t arity, Node*(*code)());
+Node *mk_global(int64_t arity, Node*(*code)(), char *name);
 
 /* makes an app node and returns a pointer to it to be pushed onto the stack */
 Node *mk_app(Node *fn, Node *arg);
@@ -44,10 +45,19 @@ Node *mk_app(Node *fn, Node *arg);
 /* creates an indirection node that can be used to replace an evaluated node */
 Node *mk_ind(Node *node);
 
-/* applies a global node by popping its arity off the stack and feeding those
-   pointers to its code funtion pointer
-   returns a result node that can be used to create an indirection node */
+/* applies a global node by calling its code pointer which pops artiy number of
+   args off the stack, performs the body of the global, and returns the resulting node */
 Node *app_global(Node *global);
+
+/* pop one node from the stack and return it without unwidning it */
+Node *eval_I();
+
+/* pop two nodes from stack and return the first one without undwinding either */
+Node *eval_K();
+
+/* pop three nodes (f, g, x) from stack and return an app node representing
+   f x (g x) without unwinding any of the nodes */
+Node *eval_S();
 
 /* function that pops two int node pointers from the stack, adds their values,
    then returns a pointer to the resulting int node
@@ -70,8 +80,13 @@ Node *unwind(Node *node);
    push final output to the top of the stack */
 void reduce();
 
+void print_indent(int indent, const char *prefix);
+
 /* prints the value of a node*/
-void print_node(Node *node);
+void print_node(Node *node, int indent);
+
+/* prints all the values currently on the stack */
+void print_stack();
 
 
 #endif

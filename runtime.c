@@ -25,12 +25,13 @@ Node *mk_int(int64_t val) {
     return node;
 }
 
-Node *mk_global(int64_t arity, Node*(*code)()) {
+Node *mk_global(int64_t arity, Node*(*code)(), char *name) {
     Node *node = &heap[hp];
     hp++;
     node->tag = NODE_GLOBAL;
     node->arity = arity;
     node->code = code;
+    node->name = name;
 
     return node;
 }
@@ -68,11 +69,32 @@ Node *stack_peak() {
     return stack[sp-1];
 }
 
+Node *eval_I() {
+    return stack_pop();
+}
+
+Node *eval_K() {
+    Node *ret = stack_pop();
+    stack_pop();
+
+    return ret;
+}
+
+Node *eval_S() {
+    Node *f = stack_pop();
+    Node *g = stack_pop();
+    Node *x = stack_pop();
+
+    Node *g_x = mk_app(g, x);
+    Node *f_x = mk_app(f, x);
+
+    return mk_app(f_x, g_x);
+}
+
 Node *eval_add() {
-    // pop two from stack
     Node *int1 = unwind(stack_pop());
     Node *int2 = unwind(stack_pop());
-    // add together
+
     int64_t new_val = int1->val + int2->val;
     Node *node = mk_int(new_val);
 
@@ -80,11 +102,12 @@ Node *eval_add() {
 }
 
 Node *app_global(Node *global) {
-    // call function which returns a Node back to the stack
     return global->code();
 }
 
 Node *unwind(Node *node) {
+    // printf("Unwinding:\n");
+    // print_node(node);
     switch (node->tag) {
         case NODE_INT:
             return node;
@@ -110,6 +133,8 @@ Node *unwind(Node *node) {
 void reduce() {
     while (1) {
         Node *root = stack_peak();
+        // printf("Reducing:\n");
+        // print_node(root);
         Node *result = unwind(root);
         *root = *mk_ind(result);
         if (result->tag == NODE_INT) {
@@ -118,28 +143,56 @@ void reduce() {
     }
 }
 
-void print_node(Node *node) {
+void print_indent(int indent, const char *prefix) {
+    for (int i = 0; i < indent; ++i) {
+        printf("  ");
+    }
+    printf("%s", prefix);
+}
+
+void print_node(Node *node, int indent) {
     if (node->tag == NODE_INT) {
+        print_indent(indent, "");
         printf("%lld\n", node->val);
     }
     else if (node->tag == NODE_IND) {
-        print_node(node->result);
+        print_indent(indent, "");
+        print_node(node->result, indent + 1);
+    }
+    else if (node->tag == NODE_APP) {
+        print_indent(indent - 1, "APP\n");
+        print_indent(indent, "├── Left:\n");
+        print_node(node->fn, indent + 1);
+        print_indent(indent, "└── Right:\n");
+        print_node(node->arg, indent + 1);
+    }
+    else if (node->tag == NODE_GLOBAL) {
+        print_indent(indent, "");
+        printf("%s (arity %lld)\n", node->name, node->arity);
     }
     else {
-        printf("Trying to print invalid node type: ");
-        if (node->tag == NODE_APP) {
-            printf("APP\n");
-        }
-        else {
-            printf("GLOBAL\n");
-        }
+        printf("Attempting to node_print a non-node.\n");
     }
+}
+
+void print_stack() {
+    printf("____Stack_____\n");
+    for (int i=0; i<sp; i++) {
+        printf("  __Node__\n");
+        print_node(stack[i], 1);
+        printf("  __End__\n");
+    }
+    printf("___Stack_End___\n");
 }
 
 int main(int argc, char **argv)
 {
     entry();
+    printf("After entry:\n");
+    print_stack();
     reduce();
-    print_node(stack_pop());
+    printf("After reduce:\n");
+    print_stack();
+    print_node(stack_pop(), 1);
     return 0;
 }

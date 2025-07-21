@@ -5,6 +5,8 @@ C_RUNTIME_SRCS=runtime.c generated.c
 C_RUNTIME_OBJS=runtime.o generated.o
 CC=gcc
 CFLAGS=-O2 -Wall
+DEBUG_CFLAGS=-g -O0 -Wall
+
 
 # Targets
 all: $(OCAML_MAIN) c_runtime
@@ -25,9 +27,15 @@ generated.o: generated.c runtime.h
 c_runtime: $(C_RUNTIME_OBJS)
 	$(CC) -o program $(C_RUNTIME_OBJS)
 
+# Debug build
+debug: $(OCAML_MAIN)
+	$(CC) $(DEBUG_CFLAGS) -c runtime.c -o runtime.o
+	$(CC) $(DEBUG_CFLAGS) -c generated.c -o generated.o
+	$(CC) -g -o debug_program runtime.o generated.o
 
+# Clean up all generated artifacts
 clean:
 	$(DUNE) clean
-	rm -f *.o program generated.c
+	rm -f *.o program generated.c debug_program
 
-.PHONY: all clean c_runtime
+.PHONY: all clean c_runtime debug 
