@@ -5,7 +5,7 @@ let rec abstract var exp = match exp with
     | CVar y when var = y -> I
     | CVar _ 
     | I | K | S           
-    | CPlus               -> CApp (K, exp)
+    | CPlus               -> CApp (K, CPlus)
     | CInt n              -> CApp (K, CInt n)
     | CApp (e1, e2)       -> CApp (CApp (S, (abstract var e1)), (abstract var e2))
 

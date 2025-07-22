@@ -46,13 +46,16 @@ Node *mk_app(Node *fn, Node *arg) {
     return node;
 }
 
-Node *mk_ind(Node *result) {
+void mk_ind(Node *result, Node *replace) {
+    // printf("Making IND\n");
+    // print_node(result, 1);
     Node *node = &heap[hp];
     hp++;
     node->tag = NODE_IND;
     node->result = result;
 
-    return node;
+    *replace = *node;
+    // return node;
 }
 
 void stack_push(Node *node) {
@@ -92,9 +95,13 @@ Node *eval_S() {
 }
 
 Node *eval_add() {
+    // printf("EVAL_ADD:\n");
+    // print_stack();
     Node *int1 = unwind(stack_pop());
     Node *int2 = unwind(stack_pop());
 
+    printf("ADDING %lld and %lld\n", int1->val, int2->val);
+    // print_node(int2, 1);
     int64_t new_val = int1->val + int2->val;
     Node *node = mk_int(new_val);
 
@@ -102,10 +109,15 @@ Node *eval_add() {
 }
 
 Node *app_global(Node *global) {
-    return global->code();
+    return unwind(global->code());
 }
 
 Node *unwind(Node *node) {
+    printf("UNWIND NODE:\n");
+    print_node(node);
+    printf("\n");
+    printf("WITH STACK:\n");
+    print_stack();
     switch (node->tag) {
         case NODE_INT:
             return node;
@@ -114,6 +126,8 @@ Node *unwind(Node *node) {
             return unwind(node->result);
 
         case NODE_APP:
+            // printf("PUSHING:\n");
+            // print_node(node->arg, 1);
             stack_push(node->arg);
             return unwind(node->fn);
 
@@ -130,9 +144,18 @@ Node *unwind(Node *node) {
 
 void reduce() {
     while (1) {
+        // print_stack();
         Node *root = stack_pop();
+        // print_node(root, 1);
         Node *result = unwind(root);
-        *root = *mk_ind(result);
+        // *root = *mk_ind(result);
+        // printf("RESULT:\n");
+        // print_node(result, 1);
+        root->tag = NODE_IND;
+        root->result = result;
+        // printf("ROOT:\n");
+        // print_node(root, 1);
+        // mk_ind(result, root);
         stack_push(result);
         if (result->tag == NODE_INT) {
             return;
@@ -147,37 +170,70 @@ void print_indent(int indent, const char *prefix) {
     printf("%s", prefix);
 }
 
-void print_node(Node *node, int indent) {
+// void print_node(Node *node, int indent) {
+//     if (node->tag == NODE_INT) {
+//         print_indent(indent, "");
+//         printf("%lld\n", node->val);
+//     }
+//     else if (node->tag == NODE_IND) {
+//         print_indent(indent, "IND ->");
+//         print_node(node->result, indent + 1);
+//     }
+//     else if (node->tag == NODE_APP) {
+//         print_indent(indent - 1, "APP\n");
+//         print_indent(indent, "├── Left:\n");
+//         print_node(node->fn, indent + 1);
+//         print_indent(indent, "└── Right:\n");
+//         print_node(node->arg, indent + 1);
+//     }
+//     else if (node->tag == NODE_GLOBAL) {
+//         print_indent(indent, "");
+//         printf("%s (arity %lld)\n", node->name, node->arity);
+//     }
+//     else {
+//         printf("Attempting to node_print a non-node.\n");
+//     }
+// }
+
+void print_node(Node *node) {
     if (node->tag == NODE_INT) {
-        print_indent(indent, "");
-        printf("%lld\n", node->val);
+        printf("%lld", node->val);
     }
     else if (node->tag == NODE_IND) {
-        print_indent(indent, "IND ->");
-        print_node(node->result, indent + 1);
+        print_node(node->result);
     }
     else if (node->tag == NODE_APP) {
-        print_indent(indent - 1, "APP\n");
-        print_indent(indent, "├── Left:\n");
-        print_node(node->fn, indent + 1);
-        print_indent(indent, "└── Right:\n");
-        print_node(node->arg, indent + 1);
+        printf("(");
+        print_node(node->fn);
+        printf(" ");
+        print_node(node->arg);
+        printf(")");
     }
     else if (node->tag == NODE_GLOBAL) {
-        print_indent(indent, "");
-        printf("%s (arity %lld)\n", node->name, node->arity);
+        printf("%s", node->name);
     }
     else {
         printf("Attempting to node_print a non-node.\n");
     }
 }
 
+// void print_stack() {
+//     printf("____Stack_____\n");
+//     for (int i=0; i<sp; i++) {
+//         printf("  __Node__\n");
+//         print_node(stack[i], 1);
+//         printf("  __End__\n");
+//     }
+//     printf("___Stack_End___\n");
+// }
+
 void print_stack() {
     printf("____Stack_____\n");
     for (int i=0; i<sp; i++) {
-        printf("  __Node__\n");
-        print_node(stack[i], 1);
-        printf("  __End__\n");
+        // printf("  __Node__\n");
+        print_node(stack[i]);
+        printf("\n");
+        // printf("  __End__\n");
     }
     printf("___Stack_End___\n");
 }
@@ -185,7 +241,12 @@ void print_stack() {
 int main(int argc, char **argv)
 {
     entry();
+    printf("INITIAL STACK:\n");
+    print_stack();
     reduce();
-    print_node(stack_pop(), 1);
+    // print_stack();
+    // print_node(stack_pop(), 1);
+    print_node(stack_pop());
+    printf("\n");
     return 0;
 }

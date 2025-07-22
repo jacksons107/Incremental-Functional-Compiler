@@ -19,17 +19,31 @@ open Ast
 
 %%
 
+// prog:
+//     | e = exp; EOF {e}
+//     ;
+
+// exp:
+//     | i = INT {Int i}
+//     | v = VAR {Var v}
+//     | e1 = exp; PLUS; e2 = exp {Plus (e1, e2)}
+//     | LET; v = VAR; EQ; b = exp; IN; e = exp {Let (v, b, e)}
+//     | LPAREN; e = exp; RPAREN {e}
+//     ;
+
+
 prog:
-    | e = exp; EOF {e}
-    ;
+  | e = exp; EOF {e}
 
 exp:
-    | i = INT {Int i}
-    | v = VAR {Var v}
-    | e1 = exp; PLUS; e2 = exp {Plus (e1, e2)}
-    | LET; v = VAR; EQ; b = exp; IN; e = exp {Let (v, b, e)}
-    | LPAREN; e = exp; RPAREN {e}
-    ;
+  | LET; v = VAR; EQ; b = exp; IN; e = exp {Let (v, b, e)}
+  | e = add_exp {e}
 
+add_exp:
+  | e1 = add_exp; PLUS; e2 = add_exp {Plus (e1, e2)}
+  | e = atom {e}
 
-
+atom:
+  | i = INT { Int i }
+  | v = VAR { Var v }
+  | LPAREN; e = exp; RPAREN { e }

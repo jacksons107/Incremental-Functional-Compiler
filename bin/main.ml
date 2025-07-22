@@ -15,8 +15,10 @@ let compile exp =
     run_j_machine (comb_to_j (lam_to_comb (elam_to_lam (ast_to_elam (parse exp)))))
 
 
-let exp = "let x = 3 in x + 4"
-(* let exp = "let x = 3 in let y = 4 in x + y" *)
+(* let exp = "5 + (5 + 6)" *)
+(* let exp = "let x = 3 in x + x + 5" *)
+(* let exp = "5 + (let x = 3 in x + 4)" *)
+let exp = "let x = 3 in let y = 4 in x + y"
 let entry = compile exp
 
 (* let exp = CApp ((CApp (K ,(CApp (I, (CApp ((CApp (CPlus, CInt 4)), CInt 5)))))), CInt 6) *)

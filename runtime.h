@@ -43,7 +43,7 @@ Node *mk_global(int64_t arity, Node*(*code)(), char *name);
 Node *mk_app(Node *fn, Node *arg);
 
 /* creates an indirection node that can be used to replace an evaluated node */
-Node *mk_ind(Node *node);
+void mk_ind(Node *result, Node *replace);
 
 /* applies a global node by calling its code pointer which pops artiy number of
    args off the stack, performs the body of the global, and returns the resulting node */
@@ -84,7 +84,8 @@ void reduce();
 void print_indent(int indent, const char *prefix);
 
 /* prints the value of a node*/
-void print_node(Node *node, int indent);
+// void print_node(Node *node, int indent);
+void print_node(Node *node);
 
 /* prints all the values currently on the stack */
 void print_stack();
