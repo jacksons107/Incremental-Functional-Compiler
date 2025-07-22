@@ -42,8 +42,8 @@ Node *mk_global(int64_t arity, Node*(*code)(), char *name);
 /* makes an app node and returns a pointer to it to be pushed onto the stack */
 Node *mk_app(Node *fn, Node *arg);
 
-/* creates an indirection node that can be used to replace an evaluated node */
-void mk_ind(Node *result, Node *replace);
+/* replace the node pointed to by old with an indirection node pointing to result */
+void mk_ind(Node *replace, Node *old);
 
 /* applies a global node by calling its code pointer which pops artiy number of
    args off the stack, performs the body of the global, and returns the resulting node */
@@ -80,12 +80,14 @@ Node *unwind(Node *node);
    push final output to the top of the stack */
 void reduce();
 
-/* helper that creates indents to create the node graph in print_node */
+/* helper that creates indents to create the node graph in print_tree */
 void print_indent(int indent, const char *prefix);
 
-/* prints the value of a node*/
-// void print_node(Node *node, int indent);
+/* prints a node in s-expression form */
 void print_node(Node *node);
+
+/* prints a node in tree form*/
+void print_tree(Node *node, int indent);
 
 /* prints all the values currently on the stack */
 void print_stack();
