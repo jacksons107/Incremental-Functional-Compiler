@@ -7,7 +7,9 @@ let rec pp_comb = function
   | K             -> "K"
   | S             -> "S"
   | CPlus         -> "+"
+  | CIf           -> "IF"
   | CInt n        -> string_of_int n
+  | CBool b       -> string_of_bool b
   | CVar v        -> v
   | CApp (f, a)   ->
       let pf = match f with CApp _ -> "(" ^ pp_comb f ^ ")" | _ -> pp_comb f in

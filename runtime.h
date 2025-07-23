@@ -4,7 +4,13 @@
 #include <stdint.h>
 
 typedef enum {
+    true,
+    false
+} Bool;
+
+typedef enum {
     NODE_INT,
+    NODE_BOOL,
     NODE_GLOBAL,
     NODE_APP,
     NODE_IND,
@@ -14,6 +20,7 @@ typedef struct Node {
     NodeTag tag;
     union {
         int64_t val;               // NODE_INT
+        Bool cond;                 // NODE_BOOL
         struct {                   // NODE_APP
             struct Node *fn;
             struct Node *arg;
@@ -35,6 +42,9 @@ extern int sp;
 
 /* makes an int node and returns a pointer to it to be pushed onto the stack */
 Node *mk_int(int64_t val);
+
+/* makes a bool node and returns a pointer to it to be pushed onto the stack */
+Node *mk_bool(Bool cond);
 
 /* makes a global node and returns a pointer to it to be pushed onto the stack */
 Node *mk_global(int64_t arity, Node*(*code)(), char *name);
@@ -63,6 +73,12 @@ Node *eval_S();
    then returns a pointer to the resulting int node
    automatically decays to a function pointer when passed to mk_global */
 Node *eval_add();
+
+/* pop one node off the stack and unwind it (should evaluate to a bool
+   if the bool is true then pop and unwind the next node (true branch), pop the 
+   node after to burn it (false branch) and return the true branch
+   if the bool is false do the opposite process */
+Node *eval_if();
 
 /* push a node onto the stack */
 void stack_push(Node *node);

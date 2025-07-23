@@ -3,7 +3,9 @@ open J_machine
 
 let rec comb_to_j exp = match exp with
     | CInt n        -> [INT n]
+    | CBool b       -> [BOOL b]
     | CPlus         -> [GLOBAL (2, ADD)]
+    | CIf           -> [GLOBAL (3, IF)]
     | I             -> [GLOBAL (1, I)]
     | K             -> [GLOBAL (2, K)]
     | S             -> [GLOBAL (3, S)]

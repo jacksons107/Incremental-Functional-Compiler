@@ -18,7 +18,8 @@ let compile exp =
 (* let exp = "5 + (5 + 6)" *)
 (* let exp = "let x = 3 in x + x + 5" *)
 (* let exp = "5 + (let x = 3 in x + 4)" *)
-let exp = "let x = 3 in let y = 4 in x + y"
+(* let exp = "let x = 3 in let y = 4 in x + y" *)
+let exp = "let x = False in if x then 1 else 2"
 let entry = compile exp
 
 (* let exp = CApp ((CApp (K ,(CApp (I, (CApp ((CApp (CPlus, CInt 4)), CInt 5)))))), CInt 6) *)

@@ -25,6 +25,15 @@ Node *mk_int(int64_t val) {
     return node;
 }
 
+Node *mk_bool(Bool cond) {
+    Node *node = &heap[hp];
+    hp++;
+    node->tag = NODE_BOOL;
+    node->cond = cond;
+
+    return node;
+}
+
 Node *mk_global(int64_t arity, Node*(*code)(), char *name) {
     Node *node = &heap[hp];
     hp++;
@@ -97,6 +106,21 @@ Node *eval_add() {
     return node;
 }
 
+Node *eval_if() {
+    Node *bool = unwind(stack_pop());
+    Node *ret;
+    if (bool->cond == true) {
+        ret = unwind(stack_pop());
+        stack_pop();
+    }
+    else {
+        stack_pop();
+        ret = unwind(stack_pop());
+    }
+
+    return ret;
+}
+
 Node *app_global(Node *global) {
     return unwind(global->code());
 }
@@ -109,6 +133,9 @@ Node *unwind(Node *node) {
     // print_stack();
     switch (node->tag) {
         case NODE_INT:
+            return node;
+
+        case NODE_BOOL:
             return node;
         
         case NODE_IND:
@@ -153,10 +180,26 @@ void print_indent(int indent, const char *prefix) {
     printf("%s", prefix);
 }
 
+void print_bool(Bool bool) {
+    if (bool == true) {
+        printf("%s\n", "True");
+    }
+    else if (bool == false) {
+        printf("%s\n", "False");
+    }
+    else {
+        printf("Attempting to print_bool a non-bool\n");
+    }
+}
+
 void print_tree(Node *node, int indent) {
     if (node->tag == NODE_INT) {
         print_indent(indent, "");
         printf("%lld\n", node->val);
+    }
+    else if (node->tag == NODE_BOOL) {
+        print_indent(indent, "");
+        print_bool(node->cond);
     }
     else if (node->tag == NODE_IND) {
         print_indent(indent, "IND ->");
@@ -181,6 +224,9 @@ void print_tree(Node *node, int indent) {
 void print_node(Node *node) {
     if (node->tag == NODE_INT) {
         printf("%lld", node->val);
+    }
+    else if (node->tag == NODE_BOOL){
+        print_bool(node->cond);
     }
     else if (node->tag == NODE_IND) {
         print_node(node->result);
