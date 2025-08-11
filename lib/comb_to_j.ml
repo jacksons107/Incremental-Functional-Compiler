@@ -6,6 +6,7 @@ let rec comb_to_j exp = match exp with
     | CBool b       -> [BOOL b]
     | CPlus         -> [GLOBAL (2, ADD)]
     | CIf           -> [GLOBAL (3, IF)]
+    | CY            -> [GLOBAL (1, Y)]
     | I             -> [GLOBAL (1, I)]
     | K             -> [GLOBAL (2, K)]
     | S             -> [GLOBAL (3, S)]

@@ -4,5 +4,6 @@ type lam_exp =
     | LBool of bool
     | LPlus
     | LIf
+    | LY
     | LApp of lam_exp * lam_exp
     | Lam of string * lam_exp

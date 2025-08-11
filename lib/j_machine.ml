@@ -1,6 +1,7 @@
 type code_ptr =
     | ADD
     | IF
+    | Y
     | I | K | S
 
 type j_instr =
@@ -12,6 +13,7 @@ type j_instr =
 let builtin_fn name = match name with
     | ADD -> "eval_add"
     | IF  -> "eval_if"
+    | Y   -> "eval_Y"
     | I   -> "eval_I"
     | K   -> "eval_K"
     | S   -> "eval_S"
@@ -19,6 +21,7 @@ let builtin_fn name = match name with
 let builtin_name name = match name with
     | ADD -> "\"ADD\""
     | IF  -> "\"IF\""
+    | Y   -> "\"Y\""
     | I   -> "\"I\""
     | K   -> "\"K\""
     | S   -> "\"S\""

@@ -19,6 +19,7 @@ rule read =
     | "(" { LPAREN }
     | ")" { RPAREN }
     | "let" {LET}
+    | "def" {DEF}
     | "=" {EQ}
     | "in" {IN}
     | var {VAR (Lexing.lexeme lexbuf)}

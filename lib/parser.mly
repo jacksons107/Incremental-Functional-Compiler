@@ -10,6 +10,7 @@ open Ast
 %token THEN
 %token ELSE
 %token LET
+%token DEF
 %token EQ
 %token IN
 %token LPAREN
@@ -29,12 +30,17 @@ prog:
 
 exp:
     | LET; v = VAR; EQ; b = exp; IN; e = exp {Let (v, b, e)}
+    | DEF; n = VAR; v = nonempty_list(VAR); EQ; e = exp; IN; r = exp {Def (n, v, e, r)}
     | IF; b = exp; THEN; e1 = exp; ELSE; e2 = exp {If (b, e1, e2)}
     | e = add_exp {e}
 
 add_exp:
     | e1 = add_exp; PLUS; e2 = add_exp {Plus (e1, e2)}
-    | e = atom {e}
+    | e = app_exp {e}
+
+app_exp:
+    | f = app_exp; arg = atom { App (f, arg) }
+    | a = atom { a }
 
 atom:
     | i = INT {Int i}

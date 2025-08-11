@@ -6,6 +6,7 @@ let rec abstract var exp = match exp with
     | CVar _ 
     | I | K | S
     | CIf
+    | CY
     | CPlus               -> CApp (K, exp)
     | CInt n              -> CApp (K, CInt n)
     | CBool b             -> CApp (K, CBool b)
@@ -16,6 +17,7 @@ let rec lam_to_comb exp = match exp with
     | LInt n          -> CInt n
     | LBool b         -> CBool b
     | LIf             -> CIf
+    | LY              -> CY
     | LPlus           -> CPlus
     | LApp (e1, e2)   -> CApp (lam_to_comb e1, lam_to_comb e2)
     | Lam (var, body) -> abstract var (lam_to_comb body)

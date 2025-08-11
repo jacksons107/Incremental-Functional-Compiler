@@ -121,6 +121,15 @@ Node *eval_if() {
     return ret;
 }
 
+// TODO -- Y is definitely wrong
+Node *eval_Y() {
+    Node *fn = stack_pop();
+    Node *ret;
+    ret = mk_app(fn, ret);
+
+    return ret;
+}
+
 Node *app_global(Node *global) {
     return unwind(global->code());
 }
@@ -167,7 +176,7 @@ void reduce() {
         mk_ind(result, root);
 
         stack_push(result);
-        if (result->tag == NODE_INT) {
+        if (result->tag == NODE_INT || result->tag == NODE_BOOL) {
             return;
         }
     }
@@ -182,10 +191,10 @@ void print_indent(int indent, const char *prefix) {
 
 void print_bool(Bool bool) {
     if (bool == true) {
-        printf("%s\n", "True");
+        printf("True");
     }
     else if (bool == false) {
-        printf("%s\n", "False");
+        printf("False");
     }
     else {
         printf("Attempting to print_bool a non-bool\n");

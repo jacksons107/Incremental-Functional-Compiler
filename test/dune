@@ -1,4 +1,4 @@
 (tests
- (names test_compiler test_lam_to_comb test_parse)
+ (names test_compiler test_lam_to_comb test_parse test_types)
  (libraries compiler))
 

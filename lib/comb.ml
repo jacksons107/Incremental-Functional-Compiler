@@ -4,5 +4,6 @@ type comb_exp =
     | CBool of bool
     | CPlus
     | CIf
+    | CY
     | CVar of string
     | CApp of comb_exp * comb_exp

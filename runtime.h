@@ -80,6 +80,10 @@ Node *eval_add();
    if the bool is false do the opposite process */
 Node *eval_if();
 
+/* pops one node off the stack, creates an app node where the fn is the popped
+   node and the arg is the app node itself */
+Node *eval_Y();
+
 /* push a node onto the stack */
 void stack_push(Node *node);
 

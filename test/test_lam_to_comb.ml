@@ -8,6 +8,7 @@ let rec pp_comb = function
   | S             -> "S"
   | CPlus         -> "+"
   | CIf           -> "IF"
+  | CY            -> "Y"
   | CInt n        -> string_of_int n
   | CBool b       -> string_of_bool b
   | CVar v        -> v
