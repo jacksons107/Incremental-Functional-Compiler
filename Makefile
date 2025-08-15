@@ -36,6 +36,6 @@ debug: $(OCAML_MAIN)
 # Clean up all generated artifacts
 clean:
 	$(DUNE) clean
-	rm -f *.o program generated.c debug_program
+	rm -f *.o prog generated.c debug_program
 
 .PHONY: all clean c_runtime debug 
