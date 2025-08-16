@@ -10,3 +10,4 @@ type exp =
     | Cons of exp * exp
     | Head of exp
     | Tail of exp
+    | Empty

@@ -7,6 +7,7 @@ type lam_exp =
     | LHead
     | LTail
     | LCons
+    | LEmpty
     | LY
     | LApp of lam_exp * lam_exp
     | Lam of string * lam_exp

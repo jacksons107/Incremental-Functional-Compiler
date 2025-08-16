@@ -14,6 +14,7 @@ typedef enum {
     NODE_GLOBAL,
     NODE_APP,
     NODE_CONS,
+    NODE_EMPTY,
     NODE_IND,
 } NodeTag;
 
@@ -36,7 +37,7 @@ typedef struct Node {
             char *name;
         };
         struct Node *result;       // NODE_IND
-    };
+    };                             // NODE_EMPTY (doesn't point to anything)
 } Node;
 
 extern Node heap[];
@@ -50,6 +51,9 @@ Node *mk_int(int64_t val);
 
 /* makes a bool node and returns a pointer to it to be pushed onto the stack */
 Node *mk_bool(Bool cond);
+
+/* makes an empty node (just a tag) */
+Node *mk_empty();
 
 /* makes a global node and returns a pointer to it to be pushed onto the stack */
 Node *mk_global(int64_t arity, Node*(*code)(), char *name);

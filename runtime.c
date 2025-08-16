@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include "runtime.h"
 
-#define HEAP_SIZE 1000
-#define STACK_SIZE 1000
+#define HEAP_SIZE 100000
+#define STACK_SIZE 100000
 
 // initialize the heap and heap pointer
 Node heap[HEAP_SIZE];
@@ -31,6 +31,14 @@ Node *mk_bool(Bool cond) {
     hp++;
     node->tag = NODE_BOOL;
     node->cond = cond;
+
+    return node;
+}
+
+Node *mk_empty() {
+    Node *node = &heap[hp];
+    hp++;
+    node->tag = NODE_EMPTY;
 
     return node;
 }
@@ -165,16 +173,19 @@ Node *app_global(Node *global) {
 
 // TODO -- add env variables to toggle on debug logs
 Node *unwind(Node *node) {
-    // printf("UNWIND NODE:\n");
-    // print_node(node);
-    // printf("\n");
-    // printf("WITH STACK:\n");
-    // print_stack();
+    printf("UNWIND NODE:\n");
+    print_node(node);
+    printf("\n");
+    printf("WITH STACK:\n");
+    print_stack();
     switch (node->tag) {
         case NODE_INT:
             return node;
 
         case NODE_BOOL:
+            return node;
+
+        case NODE_EMPTY:
             return node;
 
         case NODE_CONS:
@@ -199,7 +210,7 @@ Node *unwind(Node *node) {
     }
 }
 
-
+// TODO -- programs that are just a value seg fault
 void reduce() {
     while (1) {
         Node *root = stack_pop();
@@ -208,8 +219,7 @@ void reduce() {
         // replace root node with an indirection node
         mk_ind(result, root);
 
-        stack_push(result);
-        if (result->tag == NODE_INT || result->tag == NODE_BOOL) {
+        if (result->tag == NODE_INT || result->tag == NODE_BOOL || result->tag == NODE_EMPTY) {
             return;
         }
     }
@@ -268,8 +278,11 @@ void print_node(Node *node) {
     if (node->tag == NODE_INT) {
         printf("%lld", node->val);
     }
-    else if (node->tag == NODE_BOOL){
+    else if (node->tag == NODE_BOOL) {
         print_bool(node->cond);
+    }
+    else if (node->tag == NODE_EMPTY) {
+        printf("[]");
     }
     else if (node->tag == NODE_CONS) {
         printf("CONS [");

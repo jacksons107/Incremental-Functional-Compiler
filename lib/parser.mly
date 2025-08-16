@@ -8,6 +8,7 @@ open Ast
 %token CONS
 %token HEAD
 %token TAIL
+%token EMPTY
 %token PLUS
 %token IF
 %token THEN
@@ -44,6 +45,7 @@ add_exp:
 
 app_exp:
     | CONS; LPAREN; e1 = exp; COMMA; e2 = exp; RPAREN {Cons (e1, e2)}
+    | CONS; LPAREN; e = exp; RPAREN {Cons (e, Empty)}
     | HEAD; c = atom {Head c}
     | TAIL; c = atom {Tail c}
     | f = app_exp; arg = atom {App (f, arg)}
@@ -53,4 +55,5 @@ atom:
     | i = INT {Int i}
     | b = BOOL {Bool b}
     | v = VAR {Var v}
+    | EMPTY {Empty}
     | LPAREN; e = exp; RPAREN {e}

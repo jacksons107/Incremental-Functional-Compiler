@@ -7,6 +7,7 @@ type comb_exp =
     | CHead
     | CTail
     | CCons
+    | CEmpty
     | CY
     | CVar of string
     | CApp of comb_exp * comb_exp

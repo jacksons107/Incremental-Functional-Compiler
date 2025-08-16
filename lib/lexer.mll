@@ -26,6 +26,7 @@ rule read =
     | "CONS" {CONS}
     | "HEAD" {HEAD}
     | "TAIL" {TAIL}
+    | "[]" {EMPTY}
     | var {VAR (Lexing.lexeme lexbuf)}
     | int {INT (int_of_string (Lexing.lexeme lexbuf))}
     | eof {EOF}

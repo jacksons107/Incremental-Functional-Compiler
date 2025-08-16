@@ -4,6 +4,7 @@ open J_machine
 let rec comb_to_j exp = match exp with
     | CInt n         -> [INT n]
     | CBool b        -> [BOOL b]
+    | CEmpty         -> [EMPTY]
     | CCons          -> [GLOBAL (2, CONS)]
     | CHead          -> [GLOBAL (1, HEAD)]
     | CTail          -> [GLOBAL (1, TAIL)]

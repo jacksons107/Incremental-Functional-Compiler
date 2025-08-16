@@ -11,6 +11,7 @@ let rec pp_ast exp = match exp with
     | Var x   -> x
     | Int n   -> string_of_int n
     | Bool b  -> string_of_bool b
+    | Empty   -> "[]"
     | Cons (e1, e2) -> "CONS (" ^ pp_ast e1 ^ ", " ^ pp_ast e2 ^ ")"
     | Head c -> "HEAD (" ^ pp_ast c ^ ")"
     | Tail c -> "TAIL (" ^ pp_ast c ^ ")"
@@ -30,10 +31,12 @@ let exp5 = "def add x y = x + y in
             let y = 420 in
             let pair = CONS (x, y) in
             HEAD pair"
+let exp6 = "[]"
 
 let () = 
     print_endline (pp_ast (parse exp1));
     print_endline (pp_ast (parse exp2));
     print_endline (pp_ast (parse exp3));
     print_endline (pp_ast (parse exp4));
-    print_endline (pp_ast (parse exp5))
+    print_endline (pp_ast (parse exp5));
+    print_endline (pp_ast (parse exp6))

@@ -15,6 +15,7 @@ let rec pp_comb = function
   | CBool b       -> string_of_bool b
   | CVar v        -> v
   | CCons         -> "CONS"
+  | CEmpty        -> "[]"
   | CApp (f, a)   ->
       let pf = match f with CApp _ -> "(" ^ pp_comb f ^ ")" | _ -> pp_comb f in
       let pa = match a with CApp _ -> "(" ^ pp_comb a ^ ")" | _ -> pp_comb a in
