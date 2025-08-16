@@ -57,6 +57,7 @@ Node *mk_global(int64_t arity, Node*(*code)(), char *name);
 /* makes an app node and returns a pointer to it to be pushed onto the stack */
 Node *mk_app(Node *fn, Node *arg);
 
+/* makes a cons node and returns a pointer to it to be pushed onto the stack */
 Node *mk_cons(Node *e1, Node *e2);
 
 /* replace the node pointed to by old with an indirection node pointing to result */
@@ -86,6 +87,9 @@ Node *eval_add();
    node after to burn it (false branch) and return the true branch
    if the bool is false do the opposite process */
 Node *eval_if();
+
+/* pop two nodes off the stack and put them in a cons node */
+Node *eval_cons();
 
 /* pop one node off the stack and unwind it (should evaluate to a cons)
    return the first element of the cons */

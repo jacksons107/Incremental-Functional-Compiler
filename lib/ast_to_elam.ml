@@ -14,7 +14,7 @@ let rec ast_to_elam ast = match ast with
     | If (b, e1, e2)              -> EApp (EApp (EApp (EIf, ast_to_elam b), ast_to_elam e1), ast_to_elam e2)
     | Head c                      -> EApp (EHead, ast_to_elam c)
     | Tail c                      -> EApp (ETail, ast_to_elam c)
-    | Cons (e1, e2)               -> ECons (ast_to_elam e1, ast_to_elam e2)
+    | Cons (e1, e2)               -> EApp (EApp (ECons, ast_to_elam e1), ast_to_elam e2)
     | Let (var, b, e)             -> ELet (var, ast_to_elam b, ast_to_elam e)
     | Def (name, var, body, rest) -> ELet (name, curry var (ast_to_elam body), ast_to_elam rest)
 

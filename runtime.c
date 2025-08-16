@@ -132,6 +132,12 @@ Node *eval_if() {
     return ret;
 }
 
+Node *eval_cons() {
+    Node *ret = mk_cons(stack_pop(), stack_pop());
+
+    return ret;
+}
+
 Node *eval_head() {
     Node *cons = unwind(stack_pop());
 
@@ -157,6 +163,7 @@ Node *app_global(Node *global) {
     return unwind(global->code());
 }
 
+// TODO -- add env variables to toggle on debug logs
 Node *unwind(Node *node) {
     // printf("UNWIND NODE:\n");
     // print_node(node);

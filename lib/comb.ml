@@ -6,7 +6,7 @@ type comb_exp =
     | CIf
     | CHead
     | CTail
-    | CCons of comb_exp * comb_exp
+    | CCons
     | CY
     | CVar of string
     | CApp of comb_exp * comb_exp
