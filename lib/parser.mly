@@ -5,6 +5,9 @@ open Ast
 %token <string> VAR
 %token <int> INT 
 %token <bool> BOOL
+%token CONS
+%token HEAD
+%token TAIL
 %token PLUS
 %token IF
 %token THEN
@@ -15,6 +18,7 @@ open Ast
 %token IN
 %token LPAREN
 %token RPAREN
+%token COMMA
 %token EOF
 
 %left PLUS
@@ -39,7 +43,10 @@ add_exp:
     | e = app_exp {e}
 
 app_exp:
-    | f = app_exp; arg = atom { App (f, arg) }
+    | CONS; LPAREN; e1 = exp; COMMA; e2 = exp; RPAREN {Cons (e1, e2)}
+    | HEAD; c = atom {Head c}
+    | TAIL; c = atom {Tail c}
+    | f = app_exp; arg = atom {App (f, arg)}
     | a = atom { a }
 
 atom:

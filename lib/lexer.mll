@@ -16,12 +16,16 @@ rule read =
     | "else" {ELSE}
     | "True" {BOOL true}
     | "False" {BOOL false}
-    | "(" { LPAREN }
-    | ")" { RPAREN }
+    | "(" {LPAREN}
+    | ")" {RPAREN}
+    | "," {COMMA}
     | "let" {LET}
     | "def" {DEF}
     | "=" {EQ}
     | "in" {IN}
+    | "CONS" {CONS}
+    | "HEAD" {HEAD}
+    | "TAIL" {TAIL}
     | var {VAR (Lexing.lexeme lexbuf)}
     | int {INT (int_of_string (Lexing.lexeme lexbuf))}
     | eof {EOF}

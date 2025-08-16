@@ -16,6 +16,7 @@ int sp = 0;
 // program graph constructed by the compiler
 extern void entry();
 
+// TODO -- make an alloc_node function
 Node *mk_int(int64_t val) {
     Node *node = &heap[hp];
     hp++;
@@ -51,6 +52,16 @@ Node *mk_app(Node *fn, Node *arg) {
     node->tag = NODE_APP;
     node->fn = fn;
     node->arg = arg;
+
+    return node;
+}
+
+Node *mk_cons(Node *e1, Node *e2) {
+    Node *node = &heap[hp];
+    hp++;
+    node->tag = NODE_CONS;
+    node->e1 = e1;
+    node->e2 = e2;
 
     return node;
 }
@@ -121,6 +132,18 @@ Node *eval_if() {
     return ret;
 }
 
+Node *eval_head() {
+    Node *cons = unwind(stack_pop());
+
+    return cons->e1;
+}
+
+Node *eval_tail() {
+    Node *cons = unwind(stack_pop());
+
+    return cons->e2;
+}
+
 // TODO -- Y is definitely wrong
 Node *eval_Y() {
     Node *fn = stack_pop();
@@ -145,6 +168,9 @@ Node *unwind(Node *node) {
             return node;
 
         case NODE_BOOL:
+            return node;
+
+        case NODE_CONS:
             return node;
         
         case NODE_IND:
@@ -201,6 +227,7 @@ void print_bool(Bool bool) {
     }
 }
 
+// TODO -- update print_tree with new built-ins
 void print_tree(Node *node, int indent) {
     if (node->tag == NODE_INT) {
         print_indent(indent, "");
@@ -236,6 +263,13 @@ void print_node(Node *node) {
     }
     else if (node->tag == NODE_BOOL){
         print_bool(node->cond);
+    }
+    else if (node->tag == NODE_CONS) {
+        printf("CONS [");
+        print_node(node->e1);
+        printf(", ");
+        print_node(node->e2);
+        printf("]");
     }
     else if (node->tag == NODE_IND) {
         print_node(node->result);

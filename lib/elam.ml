@@ -4,6 +4,9 @@ type elam_exp =
     | EBool of bool
     | EPlus
     | EIf
+    | EHead
+    | ETail
+    | ECons of elam_exp * elam_exp
     | EApp of elam_exp * elam_exp
     | ELam of string * elam_exp
     | ELet of string * elam_exp * elam_exp

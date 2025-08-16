@@ -3,7 +3,6 @@ open Elam_to_lam
 open Lam_to_comb
 open Comb_to_j
 open J_machine
-(* open Sys *)
 
 let parse s =
   let lexbuf = Lexing.from_string s in

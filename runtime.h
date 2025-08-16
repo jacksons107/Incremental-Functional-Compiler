@@ -13,6 +13,7 @@ typedef enum {
     NODE_BOOL,
     NODE_GLOBAL,
     NODE_APP,
+    NODE_CONS,
     NODE_IND,
 } NodeTag;
 
@@ -24,6 +25,10 @@ typedef struct Node {
         struct {                   // NODE_APP
             struct Node *fn;
             struct Node *arg;
+        };
+        struct {                   // NODE_CONS
+            struct Node *e1;
+            struct Node *e2;
         };
         struct {                   // NODE_GLOBAL
             int64_t arity;
@@ -52,6 +57,8 @@ Node *mk_global(int64_t arity, Node*(*code)(), char *name);
 /* makes an app node and returns a pointer to it to be pushed onto the stack */
 Node *mk_app(Node *fn, Node *arg);
 
+Node *mk_cons(Node *e1, Node *e2);
+
 /* replace the node pointed to by old with an indirection node pointing to result */
 void mk_ind(Node *replace, Node *old);
 
@@ -74,11 +81,19 @@ Node *eval_S();
    automatically decays to a function pointer when passed to mk_global */
 Node *eval_add();
 
-/* pop one node off the stack and unwind it (should evaluate to a bool
+/* pop one node off the stack and unwind it (should evaluate to a bool)
    if the bool is true then pop and unwind the next node (true branch), pop the 
    node after to burn it (false branch) and return the true branch
    if the bool is false do the opposite process */
 Node *eval_if();
+
+/* pop one node off the stack and unwind it (should evaluate to a cons)
+   return the first element of the cons */
+Node *eval_head();
+
+/* pop one node off the stack and unwind it (should evaluate to a cons)
+   return the second element of the cons */
+Node *eval_tail();
 
 /* pops one node off the stack, creates an app node where the fn is the popped
    node and the arg is the app node itself */
