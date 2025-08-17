@@ -1,5 +1,6 @@
 type code_ptr =
     | ADD
+    | EQ
     | IF
     | CONS | HEAD | TAIL
     | Y
@@ -14,6 +15,7 @@ type j_instr =
 
 let builtin_fn name = match name with
     | ADD  -> "eval_add"
+    | EQ   -> "eval_eq"
     | IF   -> "eval_if"
     | CONS -> "eval_cons"
     | HEAD -> "eval_head"
@@ -25,6 +27,7 @@ let builtin_fn name = match name with
 
 let builtin_name name = match name with
     | ADD  -> "\"ADD\""
+    | EQ   -> "\"EQ\""
     | IF   -> "\"IF\""
     | CONS -> "\"CONS\""
     | HEAD -> "\"HEAD\""

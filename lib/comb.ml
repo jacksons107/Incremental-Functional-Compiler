@@ -2,6 +2,7 @@ type comb_exp =
     | I | K | S
     | CInt of int
     | CBool of bool
+    | CEq
     | CPlus
     | CIf
     | CHead

@@ -4,6 +4,7 @@ open Lam_to_comb
 open Comb_to_j
 open J_machine
 
+(* TODO -- handle module interfaces in a cleaner way *)
 let parse s =
   let lexbuf = Lexing.from_string s in
   let ast = Parser.prog Lexer.read lexbuf in

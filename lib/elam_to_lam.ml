@@ -5,8 +5,10 @@ let rec elam_to_lam expr = match expr with
     | EVar x           -> LVar x
     | EInt n           -> LInt n 
     | EBool b          -> LBool b
+    | EEq              -> LEq
     | EPlus            -> LPlus 
     | EIf              -> LIf
+    | EY               -> LY
     | EHead            -> LHead
     | ETail            -> LTail
     | ECons            -> LCons

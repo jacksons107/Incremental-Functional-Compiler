@@ -5,6 +5,7 @@ let rec abstract var exp = match exp with
     | CVar y when var = y -> I
     | CVar _ 
     | I | K | S
+    | CEq
     | CIf
     | CCons | CEmpty
     | CHead | CTail
@@ -18,6 +19,7 @@ let rec lam_to_comb exp = match exp with
     | LVar x          -> CVar x
     | LInt n          -> CInt n
     | LBool b         -> CBool b
+    | LEq             -> CEq
     | LIf             -> CIf
     | LHead           -> CHead
     | LTail           -> CTail

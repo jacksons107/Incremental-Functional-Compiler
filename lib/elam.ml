@@ -2,8 +2,10 @@ type elam_exp =
     | EVar of string
     | EInt of int
     | EBool of bool
+    | EEq
     | EPlus
     | EIf
+    | EY
     | EHead
     | ETail
     | ECons

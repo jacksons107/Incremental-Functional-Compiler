@@ -7,6 +7,7 @@ let rec pp_comb = function
   | K             -> "K"
   | S             -> "S"
   | CPlus         -> "+"
+  | CEq           -> "=="
   | CIf           -> "IF"
   | CHead         -> "HEAD"
   | CTail         -> "TAIL"

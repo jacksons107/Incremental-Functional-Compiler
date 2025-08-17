@@ -8,9 +8,10 @@ let parse s =
 
 
 let rec pp_ast exp = match exp with
-    | Var x   -> x
+    | Var x   -> "Var " ^ x
     | Int n   -> string_of_int n
     | Bool b  -> string_of_bool b
+    | Eq (e1, e2) -> "Eq (" ^ pp_ast e1 ^ ", " ^ pp_ast e2 ^ ")"
     | Empty   -> "[]"
     | Cons (e1, e2) -> "CONS (" ^ pp_ast e1 ^ ", " ^ pp_ast e2 ^ ")"
     | Head c -> "HEAD (" ^ pp_ast c ^ ")"
@@ -20,6 +21,8 @@ let rec pp_ast exp = match exp with
     | If (b, e1, e2) -> "If (" ^ pp_ast b ^ ", " ^ pp_ast e1 ^ ", " ^ pp_ast e2 ^ ")"
     | Let (v, b, e) -> "Let (" ^ v ^ ", " ^ pp_ast b ^ ", " ^ pp_ast e ^ ")"
     | Def (n, v, e, r) -> "Def (" ^ n ^ ", " ^ (String.concat " " v) ^ ", " ^ pp_ast e ^ ", " ^ pp_ast r ^ ")"
+    | Defrec (n, v, e, r) -> "Defrec (" ^ n ^ ", " ^ (String.concat " " v) ^ ", " ^ pp_ast e ^ ", " ^ pp_ast r ^ ")"
+
 
 
 let exp1 = "let x = 3 in (let y = 4 in x + y)"
@@ -32,6 +35,9 @@ let exp5 = "def add x y = x + y in
             let pair = CONS (x, y) in
             HEAD pair"
 let exp6 = "[]"
+let exp7 = "defrec sum l h = if l == h then l else l + (sum (l + 1) h) in
+            sum 0 5"
+let exp8 = "def inc x = x + 1 in inc 2"
 
 let () = 
     print_endline (pp_ast (parse exp1));
@@ -39,4 +45,7 @@ let () =
     print_endline (pp_ast (parse exp3));
     print_endline (pp_ast (parse exp4));
     print_endline (pp_ast (parse exp5));
-    print_endline (pp_ast (parse exp6))
+    print_endline (pp_ast (parse exp6));
+    print_endline (pp_ast (parse exp7));
+    print_endline (pp_ast (parse exp8))
+

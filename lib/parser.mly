@@ -15,6 +15,8 @@ open Ast
 %token ELSE
 %token LET
 %token DEF
+%token DEFREC
+%token BIND
 %token EQ
 %token IN
 %token LPAREN
@@ -23,6 +25,7 @@ open Ast
 %token EOF
 
 %left PLUS
+%left EQ
 
 
 %start <Ast.exp> prog
@@ -34,13 +37,18 @@ prog:
     | e = exp; EOF {e}
 
 exp:
-    | LET; v = VAR; EQ; b = exp; IN; e = exp {Let (v, b, e)}
-    | DEF; n = VAR; v = nonempty_list(VAR); EQ; e = exp; IN; r = exp {Def (n, v, e, r)}
+    | LET; v = VAR; BIND; b = exp; IN; e = exp {Let (v, b, e)}
+    | DEF; n = VAR; v = nonempty_list(VAR); BIND; e = exp; IN; r = exp {Def (n, v, e, r)}
+    | DEFREC; n = VAR; v = nonempty_list(VAR); BIND; e = exp; IN; r = exp {Defrec (n, v, e, r)}
     | IF; b = exp; THEN; e1 = exp; ELSE; e2 = exp {If (b, e1, e2)}
-    | e = add_exp {e}
+    | e = bool_exp {e}
 
-add_exp:
-    | e1 = add_exp; PLUS; e2 = add_exp {Plus (e1, e2)}
+bool_exp:
+    | e1 = bool_exp; EQ; e2 = bool_exp {Eq (e1, e2)}
+    | e = math_exp {e}
+
+math_exp:
+    | e1 = math_exp; PLUS; e2 = math_exp {Plus (e1, e2)}
     | e = app_exp {e}
 
 app_exp:

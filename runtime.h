@@ -86,6 +86,11 @@ Node *eval_S();
    automatically decays to a function pointer when passed to mk_global */
 Node *eval_add();
 
+/* pop two nodes off the stack, return if they are equal or not (bool node) 
+   type checking will have already checked if the values are the same types
+   temporarily returns [] in the case of malformed expression */
+Node *eval_eq();
+
 /* pop one node off the stack and unwind it (should evaluate to a bool)
    if the bool is true then pop and unwind the next node (true branch), pop the 
    node after to burn it (false branch) and return the true branch
@@ -103,8 +108,9 @@ Node *eval_head();
    return the second element of the cons */
 Node *eval_tail();
 
-/* pops one node off the stack, creates an app node where the fn is the popped
-   node and the arg is the app node itself */
+/* pops one node off the stack (should be a fn), creates an empty node as a placeholder, 
+   creates an app node of the function onto the empty node, replaces the empty node
+   with an indirection node that points to the app node, and returns the app node */
 Node *eval_Y();
 
 /* push a node onto the stack */
@@ -120,8 +126,8 @@ Node *stack_peak();
 Node *unwind(Node *node);
 
 /* perform graph reduction on graph represented by current stack and heap
-   push final output to the top of the stack */
-void reduce();
+   return final result of program as a node */
+Node *reduce();
 
 /* helper that creates indents to create the node graph in print_tree */
 void print_indent(int indent, const char *prefix);

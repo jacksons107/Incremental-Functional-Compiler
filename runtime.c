@@ -125,6 +125,26 @@ Node *eval_add() {
     return node;
 }
 
+// TODO -- clean up eval_eq once type checking is working
+Node *eval_eq() {
+    Node *val1 = unwind(stack_pop());
+    Node *val2 = unwind(stack_pop());
+
+    NodeTag tag = val1->tag;
+    if (tag == NODE_INT) {
+        if (val1->val == val2->val) {return mk_bool(true);} else {return mk_bool(false);}
+    } 
+    else if (tag == NODE_BOOL) {
+        if (val1->cond == val2->cond) {return mk_bool(true);} else {return mk_bool(false);}
+    }
+    else if (tag == NODE_EMPTY) {
+        if (val2->tag == NODE_EMPTY) {return mk_bool(true);} else {return mk_bool(false);}
+    }
+    else {
+        return mk_empty();
+    }
+}
+
 Node *eval_if() {
     Node *bool = unwind(stack_pop());
     Node *ret;
@@ -160,12 +180,23 @@ Node *eval_tail() {
 
 // TODO -- Y is definitely wrong
 Node *eval_Y() {
-    Node *fn = stack_pop();
-    Node *ret;
-    ret = mk_app(fn, ret);
+    // Stack top is the single argument f
+    Node *f = stack_pop();
 
+    // 1) Make a placeholder node to stand in for (Y f)
+    Node *hole = mk_empty();        // any fresh node works as a placeholder
+
+    // 2) Build ret = f hole
+    Node *ret = mk_app(f, hole);
+
+    // 3) Tie the knot: hole becomes an indirection to ret
+    //    So the argument to f is (Y f) == ret itself.
+    mk_ind(ret, hole);
+
+    // 4) Return f (Y f)
     return ret;
 }
+
 
 Node *app_global(Node *global) {
     return unwind(global->code());
@@ -173,11 +204,11 @@ Node *app_global(Node *global) {
 
 // TODO -- add env variables to toggle on debug logs
 Node *unwind(Node *node) {
-    printf("UNWIND NODE:\n");
-    print_node(node);
-    printf("\n");
-    printf("WITH STACK:\n");
-    print_stack();
+    // printf("UNWIND NODE:\n");
+    // print_node(node);
+    // printf("\n");
+    // printf("WITH STACK:\n");
+    // print_stack();
     switch (node->tag) {
         case NODE_INT:
             return node;
@@ -211,20 +242,21 @@ Node *unwind(Node *node) {
 }
 
 // TODO -- programs that are just a value seg fault
-void reduce() {
+Node *reduce() {
     while (1) {
         Node *root = stack_pop();
         Node *result = unwind(root);
 
+        if (result->tag == NODE_INT || result->tag == NODE_BOOL || result->tag == NODE_EMPTY) {
+            return result;
+        }
+
         // replace root node with an indirection node
         mk_ind(result, root);
-
-        if (result->tag == NODE_INT || result->tag == NODE_BOOL || result->tag == NODE_EMPTY) {
-            return;
-        }
     }
 }
 
+// TODO -- create separate utils file
 void print_indent(int indent, const char *prefix) {
     for (int i = 0; i < indent; ++i) {
         printf("  ");
@@ -325,8 +357,8 @@ int main(int argc, char **argv)
     entry();
     // printf("INITIAL STACK:\n");
     // print_stack();
-    reduce();
-    print_node(stack_pop());
+    print_node(reduce());
+    // print_node(stack_pop());
     printf("\n");
     return 0;
 }

@@ -21,7 +21,9 @@ rule read =
     | "," {COMMA}
     | "let" {LET}
     | "def" {DEF}
-    | "=" {EQ}
+    | "defrec" {DEFREC}
+    | "=" {BIND}
+    | "==" {EQ}
     | "in" {IN}
     | "CONS" {CONS}
     | "HEAD" {HEAD}
