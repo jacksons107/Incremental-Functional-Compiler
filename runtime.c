@@ -43,6 +43,14 @@ Node *mk_empty() {
     return node;
 }
 
+Node *mk_fail() {
+    Node *node = &heap[hp];
+    hp++;
+    node->tag = NODE_FAIL;
+
+    return node;
+}
+
 Node *mk_global(int64_t arity, Node*(*code)(), char *name) {
     Node *node = &heap[hp];
     hp++;
@@ -130,19 +138,35 @@ Node *eval_eq() {
     Node *val1 = unwind(stack_pop());
     Node *val2 = unwind(stack_pop());
 
-    NodeTag tag = val1->tag;
-    if (tag == NODE_INT) {
+    NodeTag tag1 = val1->tag;
+    NodeTag tag2 = val2->tag;
+    if (tag1 == NODE_INT) {
         if (val1->val == val2->val) {return mk_bool(true);} else {return mk_bool(false);}
     } 
-    else if (tag == NODE_BOOL) {
+    else if (tag1 == NODE_BOOL) {
         if (val1->cond == val2->cond) {return mk_bool(true);} else {return mk_bool(false);}
     }
-    else if (tag == NODE_EMPTY) {
-        if (val2->tag == NODE_EMPTY) {return mk_bool(true);} else {return mk_bool(false);}
+    else if (tag1 == NODE_EMPTY && tag2 == NODE_EMPTY) {
+        return mk_bool(true);
+    }
+    else if (tag1 == NODE_EMPTY || tag2 == NODE_EMPTY) {
+        return mk_bool(false);
     }
     else {
         return mk_empty();
     }
+}
+
+Node * eval_isempty() {
+    Node *node = unwind(stack_pop());
+
+    if (node->tag == NODE_EMPTY) {return mk_bool(true);} else {return mk_bool(false);}
+}
+
+Node * eval_iscons() {
+    Node *node = unwind(stack_pop());
+
+    if (node->tag == NODE_CONS) {return mk_bool(true);} else {return mk_bool(false);}
 }
 
 Node *eval_if() {
@@ -219,6 +243,9 @@ Node *unwind(Node *node) {
         case NODE_EMPTY:
             return node;
 
+        case NODE_FAIL:
+            return node;
+
         case NODE_CONS:
             return node;
         
@@ -247,7 +274,8 @@ Node *reduce() {
         Node *root = stack_pop();
         Node *result = unwind(root);
 
-        if (result->tag == NODE_INT || result->tag == NODE_BOOL || result->tag == NODE_EMPTY) {
+        if (result->tag == NODE_INT || result->tag == NODE_BOOL 
+            || result->tag == NODE_EMPTY || result->tag == NODE_FAIL) {
             return result;
         }
 
@@ -315,6 +343,9 @@ void print_node(Node *node) {
     }
     else if (node->tag == NODE_EMPTY) {
         printf("[]");
+    }
+    else if (node->tag == NODE_FAIL) {
+        printf("Fail");
     }
     else if (node->tag == NODE_CONS) {
         printf("CONS [");

@@ -15,6 +15,7 @@ typedef enum {
     NODE_APP,
     NODE_CONS,
     NODE_EMPTY,
+    NODE_FAIL,
     NODE_IND,
 } NodeTag;
 
@@ -37,7 +38,7 @@ typedef struct Node {
             char *name;
         };
         struct Node *result;       // NODE_IND
-    };                             // NODE_EMPTY (doesn't point to anything)
+    };                             // NODE_EMPTY & NODE_FAIL (don't point to anything)
 } Node;
 
 extern Node heap[];
@@ -54,6 +55,9 @@ Node *mk_bool(Bool cond);
 
 /* makes an empty node (just a tag) */
 Node *mk_empty();
+
+/* makes a fail node (just a tag) */
+Node *mk_fail();
 
 /* makes a global node and returns a pointer to it to be pushed onto the stack */
 Node *mk_global(int64_t arity, Node*(*code)(), char *name);
@@ -90,6 +94,12 @@ Node *eval_add();
    type checking will have already checked if the values are the same types
    temporarily returns [] in the case of malformed expression */
 Node *eval_eq();
+
+/* pop one node off the stack, return if it is an empty node or not (bool node) */
+Node *eval_isempty();
+
+/* pop one node off the stack, return if it is a cons node or not (bool node) */
+Node *eval_iscons();
 
 /* pop one node off the stack and unwind it (should evaluate to a bool)
    if the bool is true then pop and unwind the next node (true branch), pop the 

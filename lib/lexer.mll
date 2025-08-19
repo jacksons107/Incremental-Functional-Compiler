@@ -22,6 +22,10 @@ rule read =
     | "let" {LET}
     | "def" {DEF}
     | "defrec" {DEFREC}
+    | "match" {MATCH}
+    | "with" {WITH}
+    | "|" {BAR}
+    | "->" {ARROW}
     | "=" {BIND}
     | "==" {EQ}
     | "in" {IN}
@@ -29,6 +33,8 @@ rule read =
     | "HEAD" {HEAD}
     | "TAIL" {TAIL}
     | "[]" {EMPTY}
+    | "[" {LBRACK}
+    | "]" {RBRACK}
     | var {VAR (Lexing.lexeme lexbuf)}
     | int {INT (int_of_string (Lexing.lexeme lexbuf))}
     | eof {EOF}

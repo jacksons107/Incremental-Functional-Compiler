@@ -5,15 +5,29 @@ let parse s =
     let ast = Parser.prog Lexer.read lexbuf in
     ast
 
+let pp_pattern pat =
+  match pat with
+  | PVar x -> "PVar " ^ x
+  | PInt n -> "PInt " ^ string_of_int n
+  | PBool b -> "PBool " ^ string_of_bool b
+  | PEmpty -> "PEmpty"
+  | PCons (p1, p2) ->
+      "PCons (" ^ p1 ^ ", " ^ p2 ^ ")"
 
-
-let rec pp_ast exp = match exp with
+let rec pp_list list = match list with
+    | [] -> ""
+    | (x::xs) -> pp_ast x ^ ", " ^ pp_list xs
+and pp_ast exp = match exp with
     | Var x   -> "Var " ^ x
     | Int n   -> string_of_int n
     | Bool b  -> string_of_bool b
     | Eq (e1, e2) -> "Eq (" ^ pp_ast e1 ^ ", " ^ pp_ast e2 ^ ")"
+    | IsEmpty e -> "IsEmpty (" ^ pp_ast e ^ ")"
+    | IsCons e -> "IsCons (" ^ pp_ast e ^ ")"
     | Empty   -> "[]"
+    | Fail    -> "Fail"
     | Cons (e1, e2) -> "CONS (" ^ pp_ast e1 ^ ", " ^ pp_ast e2 ^ ")"
+    | List l -> "[" ^ pp_list l ^ "]"
     | Head c -> "HEAD (" ^ pp_ast c ^ ")"
     | Tail c -> "TAIL (" ^ pp_ast c ^ ")"
     | App (e1, e2) -> "App (" ^ pp_ast e1 ^ ", " ^ pp_ast e2 ^ ")"
@@ -22,6 +36,13 @@ let rec pp_ast exp = match exp with
     | Let (v, b, e) -> "Let (" ^ v ^ ", " ^ pp_ast b ^ ", " ^ pp_ast e ^ ")"
     | Def (n, v, e, r) -> "Def (" ^ n ^ ", " ^ (String.concat " " v) ^ ", " ^ pp_ast e ^ ", " ^ pp_ast r ^ ")"
     | Defrec (n, v, e, r) -> "Defrec (" ^ n ^ ", " ^ (String.concat " " v) ^ ", " ^ pp_ast e ^ ", " ^ pp_ast r ^ ")"
+    | Match (scrut, clauses) ->
+        let pp_clause (p, e) =
+        "(" ^ pp_pattern p ^ " -> " ^ pp_ast e ^ ")"
+        in
+        let clauses_str = String.concat "; " (List.map pp_clause clauses) in
+        "Match (" ^ pp_ast scrut ^ ", [" ^ clauses_str ^ "])"
+
 
 
 
@@ -38,6 +59,18 @@ let exp6 = "[]"
 let exp7 = "defrec sum l h = if l == h then l else l + (sum (l + 1) h) in
             sum 0 5"
 let exp8 = "def inc x = x + 1 in inc 2"
+let exp9 = "def sum_pair pair = match pair with
+                [] -> False
+                | CONS (x, y) -> x + y
+            in
+            sum_pair (CONS (2, 3))"
+let exp10 = "let x = [1, 2, 3] in x"
+let exp11 = "def add x y = x + y in
+            defrec foldr fun list ret = match list with
+                []           -> ret
+                | CONS (x, xs) -> foldr fun xs (fun ret x)
+            in
+            foldr add [1, 2, 3, 4] 0"
 
 let () = 
     print_endline (pp_ast (parse exp1));
@@ -47,5 +80,9 @@ let () =
     print_endline (pp_ast (parse exp5));
     print_endline (pp_ast (parse exp6));
     print_endline (pp_ast (parse exp7));
-    print_endline (pp_ast (parse exp8))
+    print_endline (pp_ast (parse exp8));
+    print_endline (pp_ast (parse exp9));
+    print_endline (pp_ast (parse exp10));
+    print_endline (pp_ast (parse exp11))
+
 

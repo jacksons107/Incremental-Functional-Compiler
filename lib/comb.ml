@@ -9,6 +9,9 @@ type comb_exp =
     | CTail
     | CCons
     | CEmpty
+    | CIsEmpty
+    | CIsCons
+    | CFail
     | CY
     | CVar of string
     | CApp of comb_exp * comb_exp

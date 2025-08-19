@@ -1,0 +1,7 @@
+defrec sum_list list ret = match list with
+      []           -> ret
+    | CONS (x, xs) -> sum_list xs (ret + x)
+in
+let x = 6 in
+sum_list [1, x, 3, 4] 0
+

@@ -17,6 +17,9 @@ let rec pp_comb cexp = match cexp with
   | S             -> "S"
   | CCons         -> "CONS"
   | CEmpty        -> "[]"
+  | CIsEmpty      -> "IsEmpty"
+  | CIsCons       -> "IsCons"
+  | CFail         -> "Fail"
   | CApp (f, a)   ->
       let pf = match f with CApp _ -> "(" ^ pp_comb f ^ ")" | _ -> pp_comb f in
       let pa = match a with CApp _ -> "(" ^ pp_comb a ^ ")" | _ -> pp_comb a in
@@ -26,10 +29,13 @@ let rec comb_to_j exp = match exp with
     | CInt n         -> [INT n]
     | CBool b        -> [BOOL b]
     | CEmpty         -> [EMPTY]
+    | CFail          -> [FAIL]
     | CCons          -> [GLOBAL (2, CONS)]
     | CHead          -> [GLOBAL (1, HEAD)]
     | CTail          -> [GLOBAL (1, TAIL)]
     | CEq            -> [GLOBAL (1, EQ)]
+    | CIsEmpty       -> [GLOBAL (1, ISEMPTY)]
+    | CIsCons        -> [GLOBAL (1, ISCONS)]
     | CPlus          -> [GLOBAL (2, ADD)]
     | CIf            -> [GLOBAL (3, IF)]
     | CY             -> [GLOBAL (1, Y)]

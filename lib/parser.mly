@@ -16,11 +16,17 @@ open Ast
 %token LET
 %token DEF
 %token DEFREC
+%token MATCH
+%token WITH
+%token BAR
+%token ARROW
 %token BIND
 %token EQ
 %token IN
 %token LPAREN
 %token RPAREN
+%token LBRACK
+%token RBRACK
 %token COMMA
 %token EOF
 
@@ -38,10 +44,26 @@ prog:
 
 exp:
     | LET; v = VAR; BIND; b = exp; IN; e = exp {Let (v, b, e)}
-    | DEF; n = VAR; v = nonempty_list(VAR); BIND; e = exp; IN; r = exp {Def (n, v, e, r)}
-    | DEFREC; n = VAR; v = nonempty_list(VAR); BIND; e = exp; IN; r = exp {Defrec (n, v, e, r)}
+    | DEF; n = VAR; v = list(VAR); BIND; e = exp; IN; r = exp {Def (n, v, e, r)}
+    | DEFREC; n = VAR; v = list(VAR); BIND; e = exp; IN; r = exp {Defrec (n, v, e, r)}
+    | MATCH; scrut = exp; WITH; cases = match_cases {Match (scrut, cases)}
     | IF; b = exp; THEN; e1 = exp; ELSE; e2 = exp {If (b, e1, e2)}
     | e = bool_exp {e}
+
+match_cases:
+    | c = match_case {[c]}
+    | c = match_case; BAR; cs = match_cases {c::cs}
+
+
+match_case:
+    | p = pat; ARROW; e = exp {(p, e)}
+
+pat:
+    | i = INT {PInt i}
+    | b = BOOL {PBool b}
+    | v = VAR {PVar v}
+    | CONS; LPAREN; e1 = VAR; COMMA; e2 = VAR; RPAREN {PCons (e1, e2)}
+    | EMPTY {PEmpty}
 
 bool_exp:
     | e1 = bool_exp; EQ; e2 = bool_exp {Eq (e1, e2)}
@@ -64,4 +86,5 @@ atom:
     | b = BOOL {Bool b}
     | v = VAR {Var v}
     | EMPTY {Empty}
+    | LBRACK; d = separated_list(COMMA, atom); RBRACK {List d}
     | LPAREN; e = exp; RPAREN {e}

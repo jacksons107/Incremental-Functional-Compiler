@@ -8,6 +8,8 @@ let rec pp_comb = function
   | S             -> "S"
   | CPlus         -> "+"
   | CEq           -> "=="
+  | CIsEmpty      -> "IsEmpty"
+  | CIsCons       -> "IsCons"
   | CIf           -> "IF"
   | CHead         -> "HEAD"
   | CTail         -> "TAIL"
@@ -17,6 +19,7 @@ let rec pp_comb = function
   | CVar v        -> v
   | CCons         -> "CONS"
   | CEmpty        -> "[]"
+  | CFail         -> "Fail"
   | CApp (f, a)   ->
       let pf = match f with CApp _ -> "(" ^ pp_comb f ^ ")" | _ -> pp_comb f in
       let pa = match a with CApp _ -> "(" ^ pp_comb a ^ ")" | _ -> pp_comb a in

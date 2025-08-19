@@ -9,6 +9,9 @@ type lam_exp =
     | LTail
     | LCons
     | LEmpty
+    | LIsEmpty
+    | LIsCons
+    | LFail
     | LY
     | LApp of lam_exp * lam_exp
     | Lam of string * lam_exp
