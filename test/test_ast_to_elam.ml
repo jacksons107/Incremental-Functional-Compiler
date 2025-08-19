@@ -25,10 +25,6 @@ let rec pp_elam elam_exp = match elam_exp with
     | ELam (v, b) -> "(lambda (" ^ v ^ ") (" ^ pp_elam b ^ "))"
     | ELet (v, b, e) -> "(let " ^ v ^ " = " ^ pp_elam b ^ " in " ^ pp_elam e ^ ")"
 
-let exp = "def sum_pair pair = match pair with
-                [] -> False
-                | CONS (x, y) -> x + y
-            in
-            sum_pair (CONS (2, 3))"
+let exp = "[1, 2, 3]"
 
 let () = print_endline (pp_elam (ast_to_elam (parse exp)))

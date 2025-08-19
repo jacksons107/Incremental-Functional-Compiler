@@ -62,7 +62,7 @@ pat:
     | i = INT {PInt i}
     | b = BOOL {PBool b}
     | v = VAR {PVar v}
-    | CONS; LPAREN; e1 = VAR; COMMA; e2 = VAR; RPAREN {PCons (e1, e2)}
+    | LPAREN; e1 = pat; COMMA; e2 = pat; RPAREN {PCons (e1, e2)}
     | EMPTY {PEmpty}
 
 bool_exp:

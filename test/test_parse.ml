@@ -5,14 +5,14 @@ let parse s =
     let ast = Parser.prog Lexer.read lexbuf in
     ast
 
-let pp_pattern pat =
+let rec pp_pattern pat =
   match pat with
   | PVar x -> "PVar " ^ x
   | PInt n -> "PInt " ^ string_of_int n
   | PBool b -> "PBool " ^ string_of_bool b
   | PEmpty -> "PEmpty"
   | PCons (p1, p2) ->
-      "PCons (" ^ p1 ^ ", " ^ p2 ^ ")"
+      "PCons (" ^ pp_pattern p1 ^ ", " ^ pp_pattern p2 ^ ")"
 
 let rec pp_list list = match list with
     | [] -> ""
@@ -61,16 +61,22 @@ let exp7 = "defrec sum l h = if l == h then l else l + (sum (l + 1) h) in
 let exp8 = "def inc x = x + 1 in inc 2"
 let exp9 = "def sum_pair pair = match pair with
                 [] -> False
-                | CONS (x, y) -> x + y
+                | (x, y) -> x + y
             in
             sum_pair (CONS (2, 3))"
 let exp10 = "let x = [1, 2, 3] in x"
-let exp11 = "def add x y = x + y in
-            defrec foldr fun list ret = match list with
-                []           -> ret
-                | CONS (x, xs) -> foldr fun xs (fun ret x)
+let exp11 = "def add a b = a + b in
+             defrec sum_list fun l = match l with
+                  [] -> 0
+                | (x, xs) -> fun x (sum_list fun xs)
             in
-            foldr add [1, 2, 3, 4] 0"
+            sum_list add [1, 2, 3 ,4]"
+let exp12 = "def sum_np nest_pair = 
+                match nest_pair with ((x, y), z) -> x + y + z in
+            sum_np (CONS (CONS (1, 2), 3))"
+let exp13 = "def sum_np nest_pair = 
+                match nest_pair with ((x, y), z) -> x + y + z in
+            sum_np [[1, 2], 3]"
 
 let () = 
     print_endline (pp_ast (parse exp1));
@@ -83,6 +89,8 @@ let () =
     print_endline (pp_ast (parse exp8));
     print_endline (pp_ast (parse exp9));
     print_endline (pp_ast (parse exp10));
-    print_endline (pp_ast (parse exp11))
+    print_endline (pp_ast (parse exp11));
+    print_endline (pp_ast (parse exp12));
+    print_endline (pp_ast (parse exp13))
 
 

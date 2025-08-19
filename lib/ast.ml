@@ -2,7 +2,7 @@ type pat =
     | PVar of string
     | PInt of int
     | PBool of bool
-    | PCons of string * string
+    | PCons of pat * pat
     | PEmpty
 
 type exp =

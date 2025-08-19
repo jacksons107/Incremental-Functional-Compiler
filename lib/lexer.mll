@@ -1,8 +1,17 @@
 {
 open Parser
+
+let incr_linenum lexbuf =
+  let pos = lexbuf.Lexing.lex_curr_p in
+  lexbuf.Lexing.lex_curr_p <-
+    { pos with
+      Lexing.pos_lnum = pos.Lexing.pos_lnum + 1;
+      Lexing.pos_bol = pos.Lexing.pos_cnum;
+    }
+
 }
 
-let white = [' ' '\t' '\n']+
+let white = [' ' '\t']+
 let digit = ['0'-'9']
 let int = '-'? digit+
 let var = ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
@@ -10,6 +19,7 @@ let var = ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
 rule read = 
     parse
     | white {read lexbuf}
+    | "\n" {incr_linenum lexbuf; read lexbuf}
     | "+" {PLUS}
     | "if" {IF}
     | "then" {THEN}

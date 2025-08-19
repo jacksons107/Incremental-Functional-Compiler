@@ -5,12 +5,20 @@ let rec curry vars body = match vars with
     | []      -> body
     | (x::xs) -> ELam (x, (curry xs body))
 
+let rec pat_to_exp pat = match pat with
+    | PVar x -> Var x
+    | PInt n -> Int n
+    | PBool b -> Bool b
+    | PCons (x, xs) -> Cons (pat_to_exp x, pat_to_exp xs) 
+    | PEmpty -> Empty
+
 let rec list_to_cons list = match list with
     | [] -> Empty
     | (x::xs) -> Cons (x, list_to_cons xs)
 
-let match_prod scrut pat expr = match pat with
-    | PCons (x, y)              -> Let (x, Head scrut, Let (y, Tail scrut, expr))
+let rec match_prod scrut pat expr = match pat with
+    (* | PCons (x, y)              -> Let (x, Head scrut, Let (y, Tail scrut, expr)) *)
+    | PCons (x, y)              -> match_prod (Head scrut) x (match_prod (Tail scrut) y expr)
     | PEmpty | PInt _ | PBool _ -> expr
     | PVar x                    -> Let (x, scrut, expr)
 
