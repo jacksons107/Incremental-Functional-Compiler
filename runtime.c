@@ -169,6 +169,12 @@ Node * eval_iscons() {
     if (node->tag == NODE_CONS) {return mk_bool(true);} else {return mk_bool(false);}
 }
 
+Node * eval_isint() {
+    Node *node = unwind(stack_pop());
+
+    if (node->tag == NODE_INT) {return mk_bool(true);} else {return mk_bool(false);}
+}
+
 Node *eval_if() {
     Node *bool = unwind(stack_pop());
     Node *ret;
@@ -202,22 +208,15 @@ Node *eval_tail() {
     return cons->e2;
 }
 
-// TODO -- Y is definitely wrong
 Node *eval_Y() {
-    // Stack top is the single argument f
     Node *f = stack_pop();
 
-    // 1) Make a placeholder node to stand in for (Y f)
-    Node *hole = mk_empty();        // any fresh node works as a placeholder
+    // placeholder node
+    Node *hole = mk_empty();
 
-    // 2) Build ret = f hole
     Node *ret = mk_app(f, hole);
-
-    // 3) Tie the knot: hole becomes an indirection to ret
-    //    So the argument to f is (Y f) == ret itself.
     mk_ind(ret, hole);
 
-    // 4) Return f (Y f)
     return ret;
 }
 

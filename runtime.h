@@ -101,6 +101,9 @@ Node *eval_isempty();
 /* pop one node off the stack, return if it is a cons node or not (bool node) */
 Node *eval_iscons();
 
+/* pop one node off the stack, return if it is an int node or not (bool node) */
+Node *eval_isint();
+
 /* pop one node off the stack and unwind it (should evaluate to a bool)
    if the bool is true then pop and unwind the next node (true branch), pop the 
    node after to burn it (false branch) and return the true branch

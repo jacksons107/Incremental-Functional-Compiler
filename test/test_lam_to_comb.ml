@@ -10,6 +10,7 @@ let rec pp_comb = function
   | CEq           -> "=="
   | CIsEmpty      -> "IsEmpty"
   | CIsCons       -> "IsCons"
+  | CIsInt        -> "CIsInt"
   | CIf           -> "IF"
   | CHead         -> "HEAD"
   | CTail         -> "TAIL"

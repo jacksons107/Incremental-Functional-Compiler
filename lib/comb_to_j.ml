@@ -19,6 +19,7 @@ let rec pp_comb cexp = match cexp with
   | CEmpty        -> "[]"
   | CIsEmpty      -> "IsEmpty"
   | CIsCons       -> "IsCons"
+  | CIsInt        -> "IsInt"
   | CFail         -> "Fail"
   | CApp (f, a)   ->
       let pf = match f with CApp _ -> "(" ^ pp_comb f ^ ")" | _ -> pp_comb f in
@@ -36,6 +37,7 @@ let rec comb_to_j exp = match exp with
     | CEq            -> [GLOBAL (1, EQ)]
     | CIsEmpty       -> [GLOBAL (1, ISEMPTY)]
     | CIsCons        -> [GLOBAL (1, ISCONS)]
+    | CIsInt         -> [GLOBAL (1, ISINT)]
     | CPlus          -> [GLOBAL (2, ADD)]
     | CIf            -> [GLOBAL (3, IF)]
     | CY             -> [GLOBAL (1, Y)]

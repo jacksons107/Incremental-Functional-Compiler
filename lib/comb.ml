@@ -11,6 +11,7 @@ type comb_exp =
     | CEmpty
     | CIsEmpty
     | CIsCons
+    | CIsInt
     | CFail
     | CY
     | CVar of string

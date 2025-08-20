@@ -11,6 +11,7 @@ type lam_exp =
     | LEmpty
     | LIsEmpty
     | LIsCons
+    | LIsInt
     | LFail
     | LY
     | LApp of lam_exp * lam_exp

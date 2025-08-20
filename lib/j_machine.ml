@@ -1,6 +1,6 @@
 type code_ptr =
     | ADD
-    | EQ | ISEMPTY | ISCONS
+    | EQ | ISEMPTY | ISCONS | ISINT
     | IF
     | CONS | HEAD | TAIL
     | Y
@@ -19,6 +19,7 @@ let builtin_fn name = match name with
     | EQ      -> "eval_eq"
     | ISEMPTY -> "eval_isempty"
     | ISCONS  -> "eval_iscons"
+    | ISINT   -> "eval_isint"
     | IF      -> "eval_if"
     | CONS    -> "eval_cons"
     | HEAD    -> "eval_head"
@@ -32,7 +33,8 @@ let builtin_name name = match name with
     | ADD     -> "\"ADD\""
     | EQ      -> "\"EQ\""
     | ISEMPTY -> "\"ISEMPTY\""
-    | ISCONS  ->"\"ISCONS\""
+    | ISCONS  -> "\"ISCONS\""
+    | ISINT   -> "\"ISINT\""
     | IF      -> "\"IF\""
     | CONS    -> "\"CONS\""
     | HEAD    -> "\"HEAD\""

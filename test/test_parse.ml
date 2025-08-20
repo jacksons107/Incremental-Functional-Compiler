@@ -24,6 +24,7 @@ and pp_ast exp = match exp with
     | Eq (e1, e2) -> "Eq (" ^ pp_ast e1 ^ ", " ^ pp_ast e2 ^ ")"
     | IsEmpty e -> "IsEmpty (" ^ pp_ast e ^ ")"
     | IsCons e -> "IsCons (" ^ pp_ast e ^ ")"
+    | IsInt n -> "IsInt (" ^ pp_ast n ^ ")"
     | Empty   -> "[]"
     | Fail    -> "Fail"
     | Cons (e1, e2) -> "CONS (" ^ pp_ast e1 ^ ", " ^ pp_ast e2 ^ ")"
@@ -77,6 +78,10 @@ let exp12 = "def sum_np nest_pair =
 let exp13 = "def sum_np nest_pair = 
                 match nest_pair with ((x, y), z) -> x + y + z in
             sum_np [[1, 2], 3]"
+let exp14 = "def lit_test pair = match pair with
+                (0, x) -> x
+                | (1, y) -> y + 1 in
+            lit_test (CONS (1, 3))"
 
 let () = 
     print_endline (pp_ast (parse exp1));
@@ -91,6 +96,7 @@ let () =
     print_endline (pp_ast (parse exp10));
     print_endline (pp_ast (parse exp11));
     print_endline (pp_ast (parse exp12));
-    print_endline (pp_ast (parse exp13))
+    print_endline (pp_ast (parse exp13));
+    print_endline (pp_ast (parse exp14))
 
 

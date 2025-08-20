@@ -15,6 +15,7 @@ let rec elam_to_lam expr = match expr with
     | EEmpty           -> LEmpty
     | EIsEmpty         -> LIsEmpty
     | EIsCons          -> LIsCons
+    | EIsInt           -> LIsInt
     | EFail            -> LFail
     | EApp (e1, e2)    -> LApp (elam_to_lam e1, elam_to_lam e2)
     | ELam (var, body) -> Lam (var, elam_to_lam body)

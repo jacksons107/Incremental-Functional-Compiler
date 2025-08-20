@@ -1,7 +1,4 @@
 def sum_np nest_pair = 
     match nest_pair with 
-          [] -> []
-        | ((x, y), z) -> x + y + z in
+        ((x, 2), z) -> x + z in
 sum_np (CONS (CONS (1, 2), 3))
-
-

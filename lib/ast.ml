@@ -12,6 +12,7 @@ type exp =
     | Eq of exp * exp
     | IsEmpty of exp
     | IsCons of exp
+    | IsInt of exp
     | Plus of exp * exp
     | App of exp * exp
     | Let of string * exp * exp

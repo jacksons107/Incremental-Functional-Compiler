@@ -12,6 +12,7 @@ type elam_exp =
     | EEmpty
     | EIsEmpty
     | EIsCons
+    | EIsInt
     | EFail
     | EApp of elam_exp * elam_exp
     | ELam of string * elam_exp

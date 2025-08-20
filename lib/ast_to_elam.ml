@@ -16,18 +16,32 @@ let rec list_to_cons list = match list with
     | [] -> Empty
     | (x::xs) -> Cons (x, list_to_cons xs)
 
-let rec match_prod scrut pat expr = match pat with
-    (* | PCons (x, y)              -> Let (x, Head scrut, Let (y, Tail scrut, expr)) *)
-    | PCons (x, y)              -> match_prod (Head scrut) x (match_prod (Tail scrut) y expr)
-    | PEmpty | PInt _ | PBool _ -> expr
-    | PVar x                    -> Let (x, scrut, expr)
+let rec match_sum scrut cases =
+  match cases with
+  | [] -> Fail
+  | (p, e) :: cs ->
+      match_prod scrut p e (match_sum scrut cs)
 
-let rec match_sum scrut cases = match cases with
-    | [] -> Fail
-    | (p, e)::cs -> match p with
-        | PEmpty  -> If (IsEmpty scrut, match_prod scrut p e, match_sum scrut cs)
-        | PCons _ -> If (IsCons scrut, match_prod scrut p e, match_sum scrut cs)
-        | _       -> failwith "Skipping these for now"
+and match_prod scrut pat expr on_fail =
+  match pat with
+  | PVar x ->
+      Let (x, scrut, expr)
+
+  | PInt n ->
+      If (Eq (scrut, Int n), expr, on_fail)
+
+  | PBool b ->
+      If (Eq (scrut, Bool b), expr, on_fail)
+
+  | PEmpty ->
+      If (IsEmpty scrut, expr, on_fail)
+
+  | PCons (p1, p2) ->
+      If (IsCons scrut,
+            match_prod (Head scrut) p1
+            (match_prod (Tail scrut) p2 expr on_fail)
+            on_fail,
+          on_fail)
 
 
 let rec ast_to_elam ast = match ast with
@@ -39,6 +53,7 @@ let rec ast_to_elam ast = match ast with
     | Eq (e1, e2)                     -> EApp (EApp (EEq, ast_to_elam e1), ast_to_elam e2)
     | IsEmpty e                       -> EApp (EIsEmpty, ast_to_elam e)
     | IsCons e                        -> EApp (EIsCons, ast_to_elam e)
+    | IsInt e                         -> EApp (EIsInt, ast_to_elam e)
     | Plus (e1, e2)                   -> EApp (EApp (EPlus, ast_to_elam e1), ast_to_elam e2)
     | If (b, e1, e2)                  -> EApp (EApp (EApp (EIf, ast_to_elam b), ast_to_elam e1), ast_to_elam e2)
     | Head c                          -> EApp (EHead, ast_to_elam c)
