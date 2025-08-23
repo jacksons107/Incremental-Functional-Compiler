@@ -10,6 +10,7 @@ type elam_exp =
     | ETail
     | ECons
     | EEmpty
+    | EConstr of string * int
     | EIsEmpty
     | EIsCons
     | EIsInt

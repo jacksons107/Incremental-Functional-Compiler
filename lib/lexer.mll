@@ -32,6 +32,7 @@ rule read =
     | "let" {LET}
     | "def" {DEF}
     | "defrec" {DEFREC}
+    | "type" {TYPE}
     | "match" {MATCH}
     | "with" {WITH}
     | "|" {BAR}

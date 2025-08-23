@@ -3,25 +3,26 @@ open Comb
 open Lam_to_comb
 
 let rec pp_comb = function
-  | I             -> "I"
-  | K             -> "K"
-  | S             -> "S"
-  | CPlus         -> "+"
-  | CEq           -> "=="
-  | CIsEmpty      -> "IsEmpty"
-  | CIsCons       -> "IsCons"
-  | CIsInt        -> "CIsInt"
-  | CIf           -> "IF"
-  | CHead         -> "HEAD"
-  | CTail         -> "TAIL"
-  | CY            -> "Y"
-  | CInt n        -> string_of_int n
-  | CBool b       -> string_of_bool b
-  | CVar v        -> v
-  | CCons         -> "CONS"
-  | CEmpty        -> "[]"
-  | CFail         -> "Fail"
-  | CApp (f, a)   ->
+  | I              -> "I"
+  | K              -> "K"
+  | S              -> "S"
+  | CPlus          -> "+"
+  | CEq            -> "=="
+  | CIsEmpty       -> "IsEmpty"
+  | CIsCons        -> "IsCons"
+  | CIsInt         -> "CIsInt"
+  | CIf            -> "IF"
+  | CHead          -> "HEAD"
+  | CTail          -> "TAIL"
+  | CY             -> "Y"
+  | CInt n         -> string_of_int n
+  | CBool b        -> string_of_bool b
+  | CVar v         -> v
+  | CCons          -> "CONS"
+  | CEmpty         -> "[]"
+  | CConstr (c, _) -> "Constr " ^ c
+  | CFail          -> "Fail"
+  | CApp (f, a)    ->
       let pf = match f with CApp _ -> "(" ^ pp_comb f ^ ")" | _ -> pp_comb f in
       let pa = match a with CApp _ -> "(" ^ pp_comb a ^ ")" | _ -> pp_comb a in
       pf ^ " " ^ pa

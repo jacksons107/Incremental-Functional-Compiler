@@ -16,6 +16,7 @@ open Ast
 %token LET
 %token DEF
 %token DEFREC
+%token TYPE
 %token MATCH
 %token WITH
 %token BAR
@@ -46,6 +47,7 @@ exp:
     | LET; v = VAR; BIND; b = exp; IN; e = exp {Let (v, b, e)}
     | DEF; n = VAR; v = list(VAR); BIND; e = exp; IN; r = exp {Def (n, v, e, r)}
     | DEFREC; n = VAR; v = list(VAR); BIND; e = exp; IN; r = exp {Defrec (n, v, e, r)}
+    | TYPE; n = VAR; BIND; c = VAR; a = list(VAR); IN; r = exp {Type (n, c, a, r)}
     | MATCH; scrut = exp; WITH; cases = match_cases {Match (scrut, cases)}
     | IF; b = exp; THEN; e1 = exp; ELSE; e2 = exp {If (b, e1, e2)}
     | e = bool_exp {e}

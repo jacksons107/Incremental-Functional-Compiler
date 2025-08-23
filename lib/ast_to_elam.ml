@@ -5,43 +5,36 @@ let rec curry vars body = match vars with
     | []      -> body
     | (x::xs) -> ELam (x, (curry xs body))
 
-let rec pat_to_exp pat = match pat with
-    | PVar x -> Var x
-    | PInt n -> Int n
-    | PBool b -> Bool b
-    | PCons (x, xs) -> Cons (pat_to_exp x, pat_to_exp xs) 
-    | PEmpty -> Empty
-
 let rec list_to_cons list = match list with
-    | [] -> Empty
+    | []      -> Empty
     | (x::xs) -> Cons (x, list_to_cons xs)
 
 let rec match_sum scrut cases =
-  match cases with
-  | [] -> Fail
-  | (p, e) :: cs ->
-      match_prod scrut p e (match_sum scrut cs)
+    match cases with
+    | [] -> Fail
+    | (p, e) :: cs ->
+        match_prod scrut p e (match_sum scrut cs)
 
 and match_prod scrut pat expr on_fail =
-  match pat with
-  | PVar x ->
-      Let (x, scrut, expr)
+    match pat with
+    | PVar x ->
+        Let (x, scrut, expr)
 
-  | PInt n ->
-      If (Eq (scrut, Int n), expr, on_fail)
+    | PInt n ->
+        If (Eq (scrut, Int n), expr, on_fail)
 
-  | PBool b ->
-      If (Eq (scrut, Bool b), expr, on_fail)
+    | PBool b ->
+        If (Eq (scrut, Bool b), expr, on_fail)
 
-  | PEmpty ->
-      If (IsEmpty scrut, expr, on_fail)
+    | PEmpty ->
+        If (IsEmpty scrut, expr, on_fail)
 
-  | PCons (p1, p2) ->
-      If (IsCons scrut,
-            match_prod (Head scrut) p1
-            (match_prod (Tail scrut) p2 expr on_fail)
-            on_fail,
-          on_fail)
+    | PCons (p1, p2) ->
+        If (IsCons scrut,
+                match_prod (Head scrut) p1
+                (match_prod (Tail scrut) p2 expr on_fail)
+                on_fail,
+            on_fail)
 
 
 let rec ast_to_elam ast = match ast with
@@ -59,11 +52,10 @@ let rec ast_to_elam ast = match ast with
     | Head c                          -> EApp (EHead, ast_to_elam c)
     | Tail c                          -> EApp (ETail, ast_to_elam c)
     | Cons (e1, e2)                   -> EApp (EApp (ECons, ast_to_elam e1), ast_to_elam e2)
+    | Type (_, name, args, rest)      -> ELet (name, EConstr (name, List.length args), ast_to_elam rest)
     | List d                          -> ast_to_elam (list_to_cons d)
     | Let (var, b, e)                 -> ELet (var, ast_to_elam b, ast_to_elam e)
     | Def (name, vars, body, rest)    -> ELet (name, curry vars (ast_to_elam body), ast_to_elam rest)
     | Defrec (name, vars, body, rest) -> ELet (name, EApp (EY, curry ([name] @ vars) (ast_to_elam body)), ast_to_elam rest)
     | Fail                            -> EFail
     | Match (scrut, cases)            -> ast_to_elam (match_sum scrut cases)
-
-

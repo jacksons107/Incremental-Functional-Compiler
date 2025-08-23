@@ -3,25 +3,26 @@ open J_machine
 
 (* TODO -- factor out pp_comb to utils *)
 let rec pp_comb cexp = match cexp with
-  | CPlus         -> "+"
-  | CEq           -> "=="
-  | CIf           -> "IF"
-  | CHead         -> "HEAD"
-  | CTail         -> "TAIL"
-  | CY            -> "Y"
-  | CInt n        -> string_of_int n
-  | CBool b       -> string_of_bool b
-  | CVar v        -> "CVar " ^ v
-  | I             -> "I"
-  | K             -> "K"
-  | S             -> "S"
-  | CCons         -> "CONS"
-  | CEmpty        -> "[]"
-  | CIsEmpty      -> "IsEmpty"
-  | CIsCons       -> "IsCons"
-  | CIsInt        -> "IsInt"
-  | CFail         -> "Fail"
-  | CApp (f, a)   ->
+  | CPlus          -> "+"
+  | CEq            -> "=="
+  | CIf            -> "IF"
+  | CHead          -> "HEAD"
+  | CTail          -> "TAIL"
+  | CY             -> "Y"
+  | CInt n         -> string_of_int n
+  | CBool b        -> string_of_bool b
+  | CVar v         -> "CVar " ^ v
+  | I              -> "I"
+  | K              -> "K"
+  | S              -> "S"
+  | CCons          -> "CONS"
+  | CEmpty         -> "[]"
+  | CConstr (c, _) -> "Constr " ^ c
+  | CIsEmpty       -> "IsEmpty"
+  | CIsCons        -> "IsCons"
+  | CIsInt         -> "IsInt"
+  | CFail          -> "Fail"
+  | CApp (f, a)    ->
       let pf = match f with CApp _ -> "(" ^ pp_comb f ^ ")" | _ -> pp_comb f in
       let pa = match a with CApp _ -> "(" ^ pp_comb a ^ ")" | _ -> pp_comb a in
       pf ^ " " ^ pa
@@ -34,6 +35,7 @@ let rec comb_to_j exp = match exp with
     | CCons          -> [GLOBAL (2, CONS)]
     | CHead          -> [GLOBAL (1, HEAD)]
     | CTail          -> [GLOBAL (1, TAIL)]
+    | CConstr (c, a) -> [CONSTR (a, c)]
     | CEq            -> [GLOBAL (1, EQ)]
     | CIsEmpty       -> [GLOBAL (1, ISEMPTY)]
     | CIsCons        -> [GLOBAL (1, ISCONS)]

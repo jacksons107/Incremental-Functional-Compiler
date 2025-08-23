@@ -16,7 +16,11 @@ let rec pp_pattern pat =
 
 let rec pp_list list = match list with
     | [] -> ""
-    | (x::xs) -> pp_ast x ^ ", " ^ pp_list xs
+    | (x::xs) -> x ^ ", " ^ pp_list xs
+
+let rec pp_explist list = match list with
+    | [] -> ""
+    | (x::xs) -> pp_ast x ^ ", " ^ pp_explist xs
 and pp_ast exp = match exp with
     | Var x   -> "Var " ^ x
     | Int n   -> string_of_int n
@@ -26,9 +30,10 @@ and pp_ast exp = match exp with
     | IsCons e -> "IsCons (" ^ pp_ast e ^ ")"
     | IsInt n -> "IsInt (" ^ pp_ast n ^ ")"
     | Empty   -> "[]"
+    | Type (n, c, a, r) -> "Type (" ^ n ^ ", " ^ c ^ ", " ^ "(" ^ pp_list a ^ "), " ^ pp_ast r ^ ")"
     | Fail    -> "Fail"
     | Cons (e1, e2) -> "CONS (" ^ pp_ast e1 ^ ", " ^ pp_ast e2 ^ ")"
-    | List l -> "[" ^ pp_list l ^ "]"
+    | List l -> "[" ^ pp_explist l ^ "]"
     | Head c -> "HEAD (" ^ pp_ast c ^ ")"
     | Tail c -> "TAIL (" ^ pp_ast c ^ ")"
     | App (e1, e2) -> "App (" ^ pp_ast e1 ^ ", " ^ pp_ast e2 ^ ")"
@@ -83,6 +88,8 @@ let exp14 = "def lit_test pair = match pair with
                 | (1, y) -> y + 1 in
             lit_test (CONS (1, 3))"
 
+let exp15 = "type test = TEST int int int in 69"
+
 let () = 
     print_endline (pp_ast (parse exp1));
     print_endline (pp_ast (parse exp2));
@@ -97,6 +104,8 @@ let () =
     print_endline (pp_ast (parse exp11));
     print_endline (pp_ast (parse exp12));
     print_endline (pp_ast (parse exp13));
-    print_endline (pp_ast (parse exp14))
+    print_endline (pp_ast (parse exp14));
+    print_endline (pp_ast (parse exp15))
+
 
 

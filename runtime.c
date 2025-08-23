@@ -62,6 +62,27 @@ Node *mk_global(int64_t arity, Node*(*code)(), char *name) {
     return node;
 }
 
+Node *mk_constr(int64_t arity, char *name) {
+    Node *node = &heap[hp];
+    hp++;
+    node->tag = NODE_CONSTR;
+    node->arity = arity;
+    node->name = name;
+
+    return node;
+}
+
+Node *mk_struct(char *name, int64_t arity, Node **fields) {
+    Node *node = &heap[hp];
+    hp++;
+    node->tag = NODE_STRUCT;
+    node->name = name;
+    node->arity = arity;
+    node->fields = fields;
+
+    return node;
+}
+
 Node *mk_app(Node *fn, Node *arg) {
     Node *node = &heap[hp];
     hp++;
@@ -153,23 +174,23 @@ Node *eval_eq() {
         return mk_bool(false);
     }
     else {
-        return mk_empty();
+        return mk_empty();  // probably should be error, should never get here with type checking
     }
 }
 
-Node * eval_isempty() {
+Node *eval_isempty() {
     Node *node = unwind(stack_pop());
 
     if (node->tag == NODE_EMPTY) {return mk_bool(true);} else {return mk_bool(false);}
 }
 
-Node * eval_iscons() {
+Node *eval_iscons() {
     Node *node = unwind(stack_pop());
 
     if (node->tag == NODE_CONS) {return mk_bool(true);} else {return mk_bool(false);}
 }
 
-Node * eval_isint() {
+Node *eval_isint() {
     Node *node = unwind(stack_pop());
 
     if (node->tag == NODE_INT) {return mk_bool(true);} else {return mk_bool(false);}
@@ -220,9 +241,20 @@ Node *eval_Y() {
     return ret;
 }
 
+Node *eval_constr(int64_t arity, char *name) {
+    Node **fields = &heap[hp];
+    hp += arity;
+
+    return mk_struct(name, arity, fields);
+}
+
 
 Node *app_global(Node *global) {
     return unwind(global->code());
+}
+
+Node *app_constr(Node *constr) {
+    return eval_constr(constr->arity, constr->name);
 }
 
 // TODO -- add env variables to toggle on debug logs
@@ -247,6 +279,9 @@ Node *unwind(Node *node) {
 
         case NODE_CONS:
             return node;
+
+        case NODE_STRUCT:
+            return node;
         
         case NODE_IND:
             return unwind(node->result);
@@ -263,6 +298,14 @@ Node *unwind(Node *node) {
             }
             else {
                 return node;
+            }
+
+        case NODE_CONSTR:
+            if (sp >= node->arity) {
+                return app_constr(node);
+            }
+            else {
+                return node;    // TODO -- should this be an error, will type checker catch it?
             }
     }
 }

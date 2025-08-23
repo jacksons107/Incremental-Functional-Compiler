@@ -9,6 +9,7 @@ type lam_exp =
     | LTail
     | LCons
     | LEmpty
+    | LConstr of string * int
     | LIsEmpty
     | LIsCons
     | LIsInt

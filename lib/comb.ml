@@ -9,6 +9,7 @@ type comb_exp =
     | CTail
     | CCons
     | CEmpty
+    | CConstr of string * int
     | CIsEmpty
     | CIsCons
     | CIsInt

@@ -13,6 +13,7 @@ let rec elam_to_lam expr = match expr with
     | ETail            -> LTail
     | ECons            -> LCons
     | EEmpty           -> LEmpty
+    | EConstr (c, a)   -> LConstr (c, a)
     | EIsEmpty         -> LIsEmpty
     | EIsCons          -> LIsCons
     | EIsInt           -> LIsInt

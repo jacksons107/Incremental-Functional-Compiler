@@ -17,28 +17,39 @@ typedef enum {
     NODE_EMPTY,
     NODE_FAIL,
     NODE_IND,
+    NODE_CONSTR,
+    NODE_STRUCT,
 } NodeTag;
 
 typedef struct Node {
     NodeTag tag;
     union {
-        int64_t val;               // NODE_INT
-        Bool cond;                 // NODE_BOOL
-        struct {                   // NODE_APP
+        int64_t val;                            // NODE_INT
+        Bool cond;                              // NODE_BOOL
+        struct {                                // NODE_APP
             struct Node *fn;
             struct Node *arg;
         };
-        struct {                   // NODE_CONS
+        struct {                                // NODE_CONS
             struct Node *e1;
             struct Node *e2;
         };
-        struct {                   // NODE_GLOBAL
+        struct {                                // NODE_GLOBAL
             int64_t arity;
             struct Node*(*code)();
             char *name;
         };
-        struct Node *result;       // NODE_IND
-    };                             // NODE_EMPTY & NODE_FAIL (don't point to anything)
+        struct Node *result;                    // NODE_IND
+        struct {                                // NODE_CONSTR
+            int64_t arity;
+            char *name;
+        };
+        struct {                                // NODE_STRUCT
+            char *name;
+            int64_t arity;
+            Node **fields;
+        };
+    };                                          // NODE_EMPTY & NODE_FAIL (don't point to anything)
 } Node;
 
 extern Node heap[];
@@ -68,12 +79,22 @@ Node *mk_app(Node *fn, Node *arg);
 /* makes a cons node and returns a pointer to it to be pushed onto the stack */
 Node *mk_cons(Node *e1, Node *e2);
 
+/* makes a constr node and returns a pointer to it to be pushed onto the stack */
+Node *mk_constr(int64_t arity, char *name);
+
+/* makes a struct node and returns a pointer to it to be pushed onto the stack */
+Node *mk_struct(char *name, int64_t arity, Node **fields);
+
 /* replace the node pointed to by old with an indirection node pointing to result */
 void mk_ind(Node *replace, Node *old);
 
 /* applies a global node by calling its code pointer which pops artiy number of
    args off the stack, performs the body of the global, and returns the resulting node */
 Node *app_global(Node *global);
+
+/* applies a constr node by calling eval_constr with its arity
+   as the arg, which will create the args for and then call mk_struct */
+Node *app_constr(Node *constr);
 
 /* pop one node from the stack and return it without unwidning it */
 Node *eval_I();
@@ -120,6 +141,10 @@ Node *eval_head();
 /* pop one node off the stack and unwind it (should evaluate to a cons)
    return the second element of the cons */
 Node *eval_tail();
+
+/* pop arity nodes off the stack and put them into an array of nodes 
+   pass that array with arity and name to mk_struct */
+Node *eval_constr(int64_t arity, char *name);
 
 /* pops one node off the stack (should be a fn), creates an empty node as a placeholder, 
    creates an app node of the function onto the empty node, replaces the empty node

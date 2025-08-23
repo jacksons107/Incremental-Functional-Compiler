@@ -20,15 +20,13 @@ let rec pp_elam elam_exp = match elam_exp with
     | EHead -> "HEAD"
     | ETail -> "TAIL"
     | ECons -> "CONS"
+    | EConstr (c, n) -> "Constr (" ^ c ^ ", " ^ string_of_int n ^ ")"
     | EEmpty -> "[]"
     | EFail -> "Fail"
     | EApp (e1, e2) -> "(" ^ pp_elam e1 ^ " " ^ pp_elam e2 ^ ")"
     | ELam (v, b) -> "(lambda (" ^ v ^ ") (" ^ pp_elam b ^ "))"
     | ELet (v, b, e) -> "(let " ^ v ^ " = " ^ pp_elam b ^ " in " ^ pp_elam e ^ ")"
 
-let exp = "def lit_test pair = match pair with
-                (0, x) -> x
-                | (1, y) -> y + 1 in
-            lit_test (CONS (1, 3))"
+let exp = "type test = TEST int int int in 69"
 
 let () = print_endline (pp_elam (ast_to_elam (parse exp)))
