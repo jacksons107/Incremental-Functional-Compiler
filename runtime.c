@@ -7,8 +7,8 @@
 #define STACK_SIZE 100000
 
 // initialize the heap and heap pointer
-Node heap[HEAP_SIZE];
-int hp = 0;
+uint8_t heap[HEAP_SIZE];
+size_t hp = 0;
 
 // initialize the stack and stack pointer
 Node *stack[STACK_SIZE];
@@ -17,10 +17,26 @@ int sp = 0;
 // program graph constructed by the compiler
 extern void entry();
 
-// TODO -- make an alloc_node function
+void *heap_alloc(size_t size, size_t align) {
+    size_t misalign = size % align;
+    if (misalign != 0) {
+        hp += align - misalign;
+    }
+
+    // eventually this will trigger garbage collection
+    if (hp + size > HEAP_SIZE) {
+        fprintf(stderr, "Out of heap memory!\n");
+        exit(1);
+    }
+
+    void *ptr = &heap[hp];
+    hp += size;
+
+    return ptr;
+}
+
 Node *mk_int(int64_t val) {
-    Node *node = &heap[hp];
-    hp++;
+    Node *node = heap_alloc(sizeof(Node), alignof(Node));
     node->tag = NODE_INT;
     node->val = val;
 
@@ -28,8 +44,7 @@ Node *mk_int(int64_t val) {
 }
 
 Node *mk_bool(Bool cond) {
-    Node *node = &heap[hp];
-    hp++;
+    Node *node = heap_alloc(sizeof(Node), alignof(Node));
     node->tag = NODE_BOOL;
     node->cond = cond;
 
@@ -37,24 +52,21 @@ Node *mk_bool(Bool cond) {
 }
 
 Node *mk_empty() {
-    Node *node = &heap[hp];
-    hp++;
+    Node *node = heap_alloc(sizeof(Node), alignof(Node));
     node->tag = NODE_EMPTY;
 
     return node;
 }
 
 Node *mk_fail() {
-    Node *node = &heap[hp];
-    hp++;
+    Node *node = heap_alloc(sizeof(Node), alignof(Node));
     node->tag = NODE_FAIL;
 
     return node;
 }
 
 Node *mk_global(int64_t arity, Node*(*code)(), char *name) {
-    Node *node = &heap[hp];
-    hp++;
+    Node *node = heap_alloc(sizeof(Node), alignof(Node));
     node->tag = NODE_GLOBAL;
     node->g_arity = arity;
     node->code = code;
@@ -64,8 +76,7 @@ Node *mk_global(int64_t arity, Node*(*code)(), char *name) {
 }
 
 Node *mk_constr(int64_t arity, char *name) {
-    Node *node = &heap[hp];
-    hp++;
+    Node *node = heap_alloc(sizeof(Node), alignof(Node));
     node->tag = NODE_CONSTR;
     node->c_arity = arity;
     node->c_name = name;
@@ -73,20 +84,25 @@ Node *mk_constr(int64_t arity, char *name) {
     return node;
 }
 
-Node *mk_struct(char *name, int64_t arity, Node *fields) {
-    Node *node = &heap[hp];
-    hp++;
+Node *mk_struct(char *name, int64_t arity) {
+    Node *node = heap_alloc(sizeof(Node), alignof(Node));
     node->tag = NODE_STRUCT;
     node->s_name = name;
     node->s_arity = arity;
+    
+    Node **fields = heap_alloc(sizeof(Node*), alignof(Node*));
+
     node->fields = fields;
+
+    for (int64_t i = 0; i < arity; i++) {
+        fields[i] = stack_pop();
+    }
 
     return node;
 }
 
 Node *mk_app(Node *fn, Node *arg) {
-    Node *node = &heap[hp];
-    hp++;
+    Node *node = heap_alloc(sizeof(Node), alignof(Node));
     node->tag = NODE_APP;
     node->fn = fn;
     node->arg = arg;
@@ -95,8 +111,7 @@ Node *mk_app(Node *fn, Node *arg) {
 }
 
 Node *mk_cons(Node *e1, Node *e2) {
-    Node *node = &heap[hp];
-    hp++;
+    Node *node = heap_alloc(sizeof(Node), alignof(Node));
     node->tag = NODE_CONS;
     node->e1 = e1;
     node->e2 = e2;
@@ -242,20 +257,12 @@ Node *eval_Y() {
     return ret;
 }
 
-Node *eval_constr(int64_t arity, char *name) {
-    Node *fields = &heap[hp];
-    hp += arity;
-
-    return mk_struct(name, arity, fields);
-}
-
-
 Node *app_global(Node *global) {
     return unwind(global->code());
 }
 
 Node *app_constr(Node *constr) {
-    return eval_constr(constr->c_arity, constr->c_name);
+    return mk_struct(constr->c_name, constr->c_arity);
 }
 
 // TODO -- add env variables to toggle on debug logs
@@ -354,7 +361,18 @@ void print_node(Node *node) {
         print_node(node->result);
     }
     // else if (node->tag == NODE_STRUCT) {
-    //     // do something
+    //     int64_t arity, i;
+    //     arity = node->s_arity;
+    //     printf("%s (", node->s_name);
+    //     for (i = 0; i < arity; i++) {
+    //         Node *elt = unpack_struct(node, i);
+    //         stack_push(elt);
+    //         print_node(reduce());
+    //         if (i + 1 < arity) {
+    //             printf(", ");
+    //         }
+    //     }
+    //     printf(")");
     // }
     else {
         printf("Error: Result is not a value:\n");

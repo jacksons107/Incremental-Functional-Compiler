@@ -2,6 +2,8 @@
 #define RUNTIME_H
 
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdalign.h>
 
 typedef enum {
     true,
@@ -47,16 +49,19 @@ typedef struct Node {
         struct {                                // NODE_STRUCT
             char *s_name;
             int64_t s_arity;
-            struct Node *fields;
+            struct Node **fields;
         };
     };                                          // NODE_EMPTY & NODE_FAIL (don't point to anything)
 } Node;
 
-extern Node heap[];
-extern int hp;
+extern uint8_t heap[];
+extern size_t hp;
 
 extern Node *stack[];
 extern int sp;
+
+/* allocate an object on the heap and return a pointer to it */
+void *heap_alloc(size_t size, size_t align);
 
 /* makes an int node and returns a pointer to it to be pushed onto the stack */
 Node *mk_int(int64_t val);
@@ -83,7 +88,7 @@ Node *mk_cons(Node *e1, Node *e2);
 Node *mk_constr(int64_t arity, char *name);
 
 /* makes a struct node and returns a pointer to it to be pushed onto the stack */
-Node *mk_struct(char *name, int64_t arity, Node *fields);
+Node *mk_struct(char *name, int64_t arity);
 
 /* replace the node pointed to by old with an indirection node pointing to result */
 void mk_ind(Node *replace, Node *old);
@@ -92,8 +97,7 @@ void mk_ind(Node *replace, Node *old);
    args off the stack, performs the body of the global, and returns the resulting node */
 Node *app_global(Node *global);
 
-/* applies a constr node by calling eval_constr with its arity
-   as the arg, which will create the args for and then call mk_struct */
+/* applies a constr node by calling mk_struct with the node's name and arity as args */
 Node *app_constr(Node *constr);
 
 /* pop one node from the stack and return it without unwidning it */
@@ -141,10 +145,6 @@ Node *eval_head();
 /* pop one node off the stack and unwind it (should evaluate to a cons)
    return the second element of the cons */
 Node *eval_tail();
-
-/* pop arity nodes off the stack and put them into an array of nodes 
-   pass that array with arity and name to mk_struct */
-Node *eval_constr(int64_t arity, char *name);
 
 /* pops one node off the stack (should be a fn), creates an empty node as a placeholder, 
    creates an app node of the function onto the empty node, replaces the empty node
