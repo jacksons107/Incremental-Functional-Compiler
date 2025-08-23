@@ -11,6 +11,7 @@ open Ast
 %token TAIL
 %token EMPTY
 %token PLUS
+%token STAR
 %token IF
 %token THEN
 %token ELSE
@@ -18,6 +19,7 @@ open Ast
 %token DEF
 %token DEFREC
 %token TYPE
+%token OF
 %token MATCH
 %token WITH
 %token BAR
@@ -48,7 +50,7 @@ exp:
     | LET; v = VAR; BIND; b = exp; IN; e = exp {Let (v, b, e)}
     | DEF; n = VAR; v = list(VAR); BIND; e = exp; IN; r = exp {Def (n, v, e, r)}
     | DEFREC; n = VAR; v = list(VAR); BIND; e = exp; IN; r = exp {Defrec (n, v, e, r)}
-    | TYPE; n = VAR; BIND; c = CONSTR; a = list(VAR); IN; r = exp {Type (n, c, a, r)}
+    | TYPE; n = VAR; BIND; c = CONSTR; OF; a = separated_list(STAR, VAR); IN; r = exp {Type (n, c, a, r)}
     | MATCH; scrut = exp; WITH; cases = match_cases {Match (scrut, cases)}
     | IF; b = exp; THEN; e1 = exp; ELSE; e2 = exp {If (b, e1, e2)}
     | e = bool_exp {e}
@@ -80,6 +82,7 @@ math_exp:
 app_exp:
     | CONS; LPAREN; e1 = exp; COMMA; e2 = exp; RPAREN {Cons (e1, e2)}
     | CONS; LPAREN; e = exp; RPAREN {Cons (e, Empty)}   // get rid of this?
+    | c = CONSTR; LPAREN; a = separated_list(COMMA, exp); RPAREN {Pack (c, a)}
     | HEAD; c = atom {Head c}
     | TAIL; c = atom {Tail c}
     | f = app_exp; arg = atom {App (f, arg)}

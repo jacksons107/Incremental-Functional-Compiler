@@ -83,6 +83,12 @@ void util_print_node(Node *node) {
     else if (node->tag == NODE_GLOBAL) {
         printf("%s", node->g_name);
     }
+    else if (node->tag == NODE_CONSTR) {
+        printf("Constr: %s", node->c_name);
+    }
+    else if (node->tag == NODE_STRUCT) {
+        printf("Struct: %s", node->s_name);
+    }
     else {
         printf("Attempting to util_node_print a non-node or unimplimented node.\n");
     }

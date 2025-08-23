@@ -31,6 +31,7 @@ and pp_ast exp = match exp with
     | IsInt n -> "IsInt (" ^ pp_ast n ^ ")"
     | Empty   -> "[]"
     | Type (n, c, a, r) -> "Type (" ^ n ^ ", " ^ c ^ ", " ^ "(" ^ pp_list a ^ "), " ^ pp_ast r ^ ")"
+    | Pack (c, a) -> "Pack (" ^ c ^ ", " ^ "(" ^ pp_explist a ^ "))"
     | Fail    -> "Fail"
     | Cons (e1, e2) -> "CONS (" ^ pp_ast e1 ^ ", " ^ pp_ast e2 ^ ")"
     | List l -> "[" ^ pp_explist l ^ "]"
@@ -90,6 +91,9 @@ let exp14 = "def lit_test pair = match pair with
 
 let exp15 = "type test = Test int int int in 69"
 
+let exp16 = "type test = Test int int int in
+             Test (1, 2, 3)"
+
 let () = 
     print_endline (pp_ast (parse exp1));
     print_endline (pp_ast (parse exp2));
@@ -105,7 +109,9 @@ let () =
     print_endline (pp_ast (parse exp12));
     print_endline (pp_ast (parse exp13));
     print_endline (pp_ast (parse exp14));
-    print_endline (pp_ast (parse exp15))
+    print_endline (pp_ast (parse exp15));
+    print_endline (pp_ast (parse exp16))
+
 
 
 

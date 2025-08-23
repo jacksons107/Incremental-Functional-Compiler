@@ -22,6 +22,7 @@ rule read =
     | white {read lexbuf}
     | "\n" {incr_linenum lexbuf; read lexbuf}
     | "+" {PLUS}
+    | "*" {STAR}
     | "if" {IF}
     | "then" {THEN}
     | "else" {ELSE}
@@ -34,6 +35,7 @@ rule read =
     | "def" {DEF}
     | "defrec" {DEFREC}
     | "type" {TYPE}
+    | "of" {OF}
     | "match" {MATCH}
     | "with" {WITH}
     | "|" {BAR}

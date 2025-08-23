@@ -90,6 +90,9 @@ Node *mk_constr(int64_t arity, char *name);
 /* makes a struct node and returns a pointer to it to be pushed onto the stack */
 Node *mk_struct(char *name, int64_t arity);
 
+/* returns element of struct node at index n */
+Node *unpack_struct(Node*struc, int64_t n);
+
 /* replace the node pointed to by old with an indirection node pointing to result */
 void mk_ind(Node *replace, Node *old);
 

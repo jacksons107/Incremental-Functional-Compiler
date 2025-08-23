@@ -18,7 +18,7 @@ int sp = 0;
 extern void entry();
 
 void *heap_alloc(size_t size, size_t align) {
-    size_t misalign = size % align;
+    size_t misalign = hp % align;
     if (misalign != 0) {
         hp += align - misalign;
     }
@@ -90,7 +90,7 @@ Node *mk_struct(char *name, int64_t arity) {
     node->s_name = name;
     node->s_arity = arity;
     
-    Node **fields = heap_alloc(sizeof(Node*), alignof(Node*));
+    Node **fields = heap_alloc(sizeof(Node*) * arity, alignof(Node*));
 
     node->fields = fields;
 
@@ -99,6 +99,15 @@ Node *mk_struct(char *name, int64_t arity) {
     }
 
     return node;
+}
+
+Node *unpack_struct(Node *struc, int64_t n) {
+    if (n < 0 || n >= struc->s_arity) {
+        fprintf(stderr, "unpack_struct: index out of range\n");
+        exit(1);
+    }
+
+    return struc->fields[n];
 }
 
 Node *mk_app(Node *fn, Node *arg) {
@@ -325,7 +334,7 @@ Node *reduce() {
 
         if (result->tag == NODE_INT || result->tag == NODE_BOOL 
             || result->tag == NODE_EMPTY || result->tag == NODE_FAIL
-            || result->tag == NODE_CONS) {
+            || result->tag == NODE_CONS || result->tag == NODE_STRUCT) {
             return result;
         }
 
@@ -360,20 +369,20 @@ void print_node(Node *node) {
     else if (node->tag == NODE_IND) {
         print_node(node->result);
     }
-    // else if (node->tag == NODE_STRUCT) {
-    //     int64_t arity, i;
-    //     arity = node->s_arity;
-    //     printf("%s (", node->s_name);
-    //     for (i = 0; i < arity; i++) {
-    //         Node *elt = unpack_struct(node, i);
-    //         stack_push(elt);
-    //         print_node(reduce());
-    //         if (i + 1 < arity) {
-    //             printf(", ");
-    //         }
-    //     }
-    //     printf(")");
-    // }
+    else if (node->tag == NODE_STRUCT) {
+        int64_t arity, i;
+        arity = node->s_arity;
+        printf("%s (", node->s_name);
+        for (i = 0; i < arity; i++) {
+            Node *elt = unpack_struct(node, i);
+            stack_push(elt);
+            print_node(reduce());
+            if (i + 1 < arity) {
+                printf(", ");
+            }
+        }
+        printf(")");
+    }
     else {
         printf("Error: Result is not a value:\n");
         util_print_node(node);

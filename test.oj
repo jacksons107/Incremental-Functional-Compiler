@@ -1,3 +1,2 @@
-defrec inflist n = 
-    Cons (n, inflist (n + 1)) in
-inflist 0
+type test = Test of int * int * int in
+Test (1, 2, 3)

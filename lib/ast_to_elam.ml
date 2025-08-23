@@ -53,9 +53,13 @@ let rec ast_to_elam ast = match ast with
     | Tail c                          -> EApp (ETail, ast_to_elam c)
     | Cons (e1, e2)                   -> EApp (EApp (ECons, ast_to_elam e1), ast_to_elam e2)
     | Type (_, name, args, rest)      -> ELet (name, EConstr (name, List.length args), ast_to_elam rest)
+    | Pack (name, args)               -> app_constr (EVar name) (List.rev args)
     | List d                          -> ast_to_elam (list_to_cons d)
     | Let (var, b, e)                 -> ELet (var, ast_to_elam b, ast_to_elam e)
     | Def (name, vars, body, rest)    -> ELet (name, curry vars (ast_to_elam body), ast_to_elam rest)
     | Defrec (name, vars, body, rest) -> ELet (name, EApp (EY, curry ([name] @ vars) (ast_to_elam body)), ast_to_elam rest)
     | Fail                            -> EFail
     | Match (scrut, cases)            -> ast_to_elam (match_sum scrut cases)
+and app_constr constr args = match args with
+    | []    -> constr
+    | (x::xs) -> EApp (app_constr constr xs, ast_to_elam x)
