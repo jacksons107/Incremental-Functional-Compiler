@@ -27,6 +27,6 @@ let rec pp_elam elam_exp = match elam_exp with
     | ELam (v, b) -> "(lambda (" ^ v ^ ") (" ^ pp_elam b ^ "))"
     | ELet (v, b, e) -> "(let " ^ v ^ " = " ^ pp_elam b ^ " in " ^ pp_elam e ^ ")"
 
-let exp = "type test = TEST int int int in 69"
+let exp = "type test = Test int int int in 69"
 
 let () = print_endline (pp_elam (ast_to_elam (parse exp)))

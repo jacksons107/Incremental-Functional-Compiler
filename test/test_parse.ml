@@ -59,8 +59,8 @@ let exp4 = "def add x y = x + y in add 69 420"
 let exp5 = "def add x y = x + y in 
             let x = 69 in
             let y = 420 in
-            let pair = CONS (x, y) in
-            HEAD pair"
+            let pair = Cons (x, y) in
+            head pair"
 let exp6 = "[]"
 let exp7 = "defrec sum l h = if l == h then l else l + (sum (l + 1) h) in
             sum 0 5"
@@ -69,7 +69,7 @@ let exp9 = "def sum_pair pair = match pair with
                 [] -> False
                 | (x, y) -> x + y
             in
-            sum_pair (CONS (2, 3))"
+            sum_pair (Cons (2, 3))"
 let exp10 = "let x = [1, 2, 3] in x"
 let exp11 = "def add a b = a + b in
              defrec sum_list fun l = match l with
@@ -79,16 +79,16 @@ let exp11 = "def add a b = a + b in
             sum_list add [1, 2, 3 ,4]"
 let exp12 = "def sum_np nest_pair = 
                 match nest_pair with ((x, y), z) -> x + y + z in
-            sum_np (CONS (CONS (1, 2), 3))"
+            sum_np (Cons (Cons (1, 2), 3))"
 let exp13 = "def sum_np nest_pair = 
                 match nest_pair with ((x, y), z) -> x + y + z in
             sum_np [[1, 2], 3]"
 let exp14 = "def lit_test pair = match pair with
                 (0, x) -> x
                 | (1, y) -> y + 1 in
-            lit_test (CONS (1, 3))"
+            lit_test (Cons (1, 3))"
 
-let exp15 = "type test = TEST int int int in 69"
+let exp15 = "type test = Test int int int in 69"
 
 let () = 
     print_endline (pp_ast (parse exp1));

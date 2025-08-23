@@ -14,7 +14,8 @@ let incr_linenum lexbuf =
 let white = [' ' '\t']+
 let digit = ['0'-'9']
 let int = '-'? digit+
-let var = ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
+let var = ['a'-'z']['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
+let constr = ['A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
 
 rule read = 
     parse
@@ -40,12 +41,13 @@ rule read =
     | "=" {BIND}
     | "==" {EQ}
     | "in" {IN}
-    | "CONS" {CONS}
-    | "HEAD" {HEAD}
-    | "TAIL" {TAIL}
+    | "Cons" {CONS}
+    | "head" {HEAD}
+    | "tail" {TAIL}
     | "[]" {EMPTY}
     | "[" {LBRACK}
     | "]" {RBRACK}
     | var {VAR (Lexing.lexeme lexbuf)}
+    | constr {CONSTR (Lexing.lexeme lexbuf)}
     | int {INT (int_of_string (Lexing.lexeme lexbuf))}
     | eof {EOF}

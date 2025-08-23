@@ -5,6 +5,7 @@ open Ast
 %token <string> VAR
 %token <int> INT 
 %token <bool> BOOL
+%token <string> CONSTR
 %token CONS
 %token HEAD
 %token TAIL
@@ -47,7 +48,7 @@ exp:
     | LET; v = VAR; BIND; b = exp; IN; e = exp {Let (v, b, e)}
     | DEF; n = VAR; v = list(VAR); BIND; e = exp; IN; r = exp {Def (n, v, e, r)}
     | DEFREC; n = VAR; v = list(VAR); BIND; e = exp; IN; r = exp {Defrec (n, v, e, r)}
-    | TYPE; n = VAR; BIND; c = VAR; a = list(VAR); IN; r = exp {Type (n, c, a, r)}
+    | TYPE; n = VAR; BIND; c = CONSTR; a = list(VAR); IN; r = exp {Type (n, c, a, r)}
     | MATCH; scrut = exp; WITH; cases = match_cases {Match (scrut, cases)}
     | IF; b = exp; THEN; e1 = exp; ELSE; e2 = exp {If (b, e1, e2)}
     | e = bool_exp {e}
@@ -75,9 +76,10 @@ math_exp:
     | e1 = math_exp; PLUS; e2 = math_exp {Plus (e1, e2)}
     | e = app_exp {e}
 
+// TODO -- change outer CONS to infix ::
 app_exp:
     | CONS; LPAREN; e1 = exp; COMMA; e2 = exp; RPAREN {Cons (e1, e2)}
-    | CONS; LPAREN; e = exp; RPAREN {Cons (e, Empty)}
+    | CONS; LPAREN; e = exp; RPAREN {Cons (e, Empty)}   // get rid of this?
     | HEAD; c = atom {Head c}
     | TAIL; c = atom {Tail c}
     | f = app_exp; arg = atom {App (f, arg)}
