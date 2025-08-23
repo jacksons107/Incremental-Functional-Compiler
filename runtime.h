@@ -35,19 +35,19 @@ typedef struct Node {
             struct Node *e2;
         };
         struct {                                // NODE_GLOBAL
-            int64_t arity;
+            int64_t g_arity;
             struct Node*(*code)();
-            char *name;
+            char *g_name;
         };
         struct Node *result;                    // NODE_IND
         struct {                                // NODE_CONSTR
-            int64_t arity;
-            char *name;
+            int64_t c_arity;
+            char *c_name;
         };
         struct {                                // NODE_STRUCT
-            char *name;
-            int64_t arity;
-            Node **fields;
+            char *s_name;
+            int64_t s_arity;
+            struct Node *fields;
         };
     };                                          // NODE_EMPTY & NODE_FAIL (don't point to anything)
 } Node;
@@ -83,7 +83,7 @@ Node *mk_cons(Node *e1, Node *e2);
 Node *mk_constr(int64_t arity, char *name);
 
 /* makes a struct node and returns a pointer to it to be pushed onto the stack */
-Node *mk_struct(char *name, int64_t arity, Node **fields);
+Node *mk_struct(char *name, int64_t arity, Node *fields);
 
 /* replace the node pointed to by old with an indirection node pointing to result */
 void mk_ind(Node *replace, Node *old);
@@ -167,17 +167,12 @@ Node *unwind(Node *node);
    return final result of program as a node */
 Node *reduce();
 
-/* helper that creates indents to create the node graph in print_tree */
-void print_indent(int indent, const char *prefix);
-
-/* prints a node in s-expression form */
+/* prints the node that is the result of the computation 
+   if the node is a constructed type, drives evaluation of the inner elements and
+   prints them as they are computed 
+   if the result is not a value prints an error message the uses util_print_node 
+   to print the node 
+   flushes stdout everytime it is called */
 void print_node(Node *node);
-
-/* prints a node in tree form*/
-void print_tree(Node *node, int indent);
-
-/* prints all the values currently on the stack */
-void print_stack();
-
 
 #endif

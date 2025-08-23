@@ -63,7 +63,7 @@ let () =
   close_out oc;
 
   (* Call gcc to produce executable *)
-  let cmd = "gcc -o prog generated.c runtime.c" in
+  let cmd = "gcc -o prog generated.c runtime.c utils.c" in
   match Sys.command cmd with
   | 0 -> Printf.printf "Build successful. Run ./prog\n"
   | n -> Printf.eprintf "gcc failed with code %d\n" n

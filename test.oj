@@ -1,4 +1,3 @@
-def sum_np nest_pair = 
-    match nest_pair with 
-        ((x, 2), z) -> x + z in
-sum_np (CONS (CONS (1, 2), 3))
+defrec inflist n = 
+    Cons (n, inflist (n + 1)) in
+inflist 0

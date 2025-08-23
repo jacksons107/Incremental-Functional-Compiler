@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "runtime.h"
+#include "utils.h"
 
 #define HEAP_SIZE 100000
 #define STACK_SIZE 100000
@@ -55,9 +56,9 @@ Node *mk_global(int64_t arity, Node*(*code)(), char *name) {
     Node *node = &heap[hp];
     hp++;
     node->tag = NODE_GLOBAL;
-    node->arity = arity;
+    node->g_arity = arity;
     node->code = code;
-    node->name = name;
+    node->g_name = name;
 
     return node;
 }
@@ -66,18 +67,18 @@ Node *mk_constr(int64_t arity, char *name) {
     Node *node = &heap[hp];
     hp++;
     node->tag = NODE_CONSTR;
-    node->arity = arity;
-    node->name = name;
+    node->c_arity = arity;
+    node->c_name = name;
 
     return node;
 }
 
-Node *mk_struct(char *name, int64_t arity, Node **fields) {
+Node *mk_struct(char *name, int64_t arity, Node *fields) {
     Node *node = &heap[hp];
     hp++;
     node->tag = NODE_STRUCT;
-    node->name = name;
-    node->arity = arity;
+    node->s_name = name;
+    node->s_arity = arity;
     node->fields = fields;
 
     return node;
@@ -242,7 +243,7 @@ Node *eval_Y() {
 }
 
 Node *eval_constr(int64_t arity, char *name) {
-    Node **fields = &heap[hp];
+    Node *fields = &heap[hp];
     hp += arity;
 
     return mk_struct(name, arity, fields);
@@ -254,16 +255,16 @@ Node *app_global(Node *global) {
 }
 
 Node *app_constr(Node *constr) {
-    return eval_constr(constr->arity, constr->name);
+    return eval_constr(constr->c_arity, constr->c_name);
 }
 
 // TODO -- add env variables to toggle on debug logs
 Node *unwind(Node *node) {
     // printf("UNWIND NODE:\n");
-    // print_node(node);
+    // util_print_node(node);
     // printf("\n");
     // printf("WITH STACK:\n");
-    // print_stack();
+    // util_print_stack();
     switch (node->tag) {
         case NODE_INT:
             return node;
@@ -288,12 +289,12 @@ Node *unwind(Node *node) {
 
         case NODE_APP:
             // printf("PUSHING:\n");
-            // print_node(node->arg, 1);
+            // util_print_node(node->arg, 1);
             stack_push(node->arg);
             return unwind(node->fn);
 
         case NODE_GLOBAL:
-            if (sp >= node->arity) {
+            if (sp >= node->g_arity) {
                 return app_global(node);
             }
             else {
@@ -301,7 +302,7 @@ Node *unwind(Node *node) {
             }
 
         case NODE_CONSTR:
-            if (sp >= node->arity) {
+            if (sp >= node->c_arity) {
                 return app_constr(node);
             }
             else {
@@ -310,14 +311,14 @@ Node *unwind(Node *node) {
     }
 }
 
-// TODO -- programs that are just a value seg fault
 Node *reduce() {
     while (1) {
         Node *root = stack_pop();
         Node *result = unwind(root);
 
         if (result->tag == NODE_INT || result->tag == NODE_BOOL 
-            || result->tag == NODE_EMPTY || result->tag == NODE_FAIL) {
+            || result->tag == NODE_EMPTY || result->tag == NODE_FAIL
+            || result->tag == NODE_CONS) {
             return result;
         }
 
@@ -326,62 +327,13 @@ Node *reduce() {
     }
 }
 
-// TODO -- create separate utils file
-void print_indent(int indent, const char *prefix) {
-    for (int i = 0; i < indent; ++i) {
-        printf("  ");
-    }
-    printf("%s", prefix);
-}
-
-void print_bool(Bool bool) {
-    if (bool == true) {
-        printf("True");
-    }
-    else if (bool == false) {
-        printf("False");
-    }
-    else {
-        printf("Attempting to print_bool a non-bool\n");
-    }
-}
-
-// TODO -- update print_tree with new built-ins
-void print_tree(Node *node, int indent) {
-    if (node->tag == NODE_INT) {
-        print_indent(indent, "");
-        printf("%lld\n", node->val);
-    }
-    else if (node->tag == NODE_BOOL) {
-        print_indent(indent, "");
-        print_bool(node->cond);
-    }
-    else if (node->tag == NODE_IND) {
-        print_indent(indent, "IND ->");
-        print_tree(node->result, indent + 1);
-    }
-    else if (node->tag == NODE_APP) {
-        print_indent(indent - 1, "APP\n");
-        print_indent(indent, "├── Left:\n");
-        print_tree(node->fn, indent + 1);
-        print_indent(indent, "└── Right:\n");
-        print_tree(node->arg, indent + 1);
-    }
-    else if (node->tag == NODE_GLOBAL) {
-        print_indent(indent, "");
-        printf("%s (arity %lld)\n", node->name, node->arity);
-    }
-    else {
-        printf("Attempting to node_print a non-node.\n");
-    }
-}
-
 void print_node(Node *node) {
+    fflush(stdout);
     if (node->tag == NODE_INT) {
         printf("%lld", node->val);
     }
     else if (node->tag == NODE_BOOL) {
-        print_bool(node->cond);
+        util_print_bool(node->cond);
     }
     else if (node->tag == NODE_EMPTY) {
         printf("[]");
@@ -390,48 +342,33 @@ void print_node(Node *node) {
         printf("Fail");
     }
     else if (node->tag == NODE_CONS) {
-        printf("CONS [");
-        print_node(node->e1);
+        printf("CONS (");
+        stack_push(node->e1);
+        print_node(reduce());
         printf(", ");
-        print_node(node->e2);
-        printf("]");
+        stack_push(node->e2);
+        print_node(reduce());
+        printf(")");
     }
     else if (node->tag == NODE_IND) {
         print_node(node->result);
     }
-    else if (node->tag == NODE_APP) {
-        printf("(");
-        print_node(node->fn);
-        printf(" ");
-        print_node(node->arg);
-        printf(")");
-    }
-    else if (node->tag == NODE_GLOBAL) {
-        printf("%s", node->name);
-    }
+    // else if (node->tag == NODE_STRUCT) {
+    //     // do something
+    // }
     else {
-        printf("Attempting to node_print a non-node.\n");
+        printf("Error: Result is not a value:\n");
+        util_print_node(node);
     }
 }
 
-void print_stack() {
-    printf("____Stack_____\n");
-    for (int i=0; i<sp; i++) {
-        // printf("  __Node__\n");
-        print_node(stack[i]);
-        printf("\n");
-        // printf("  __End__\n");
-    }
-    printf("___Stack_End___\n");
-}
-
+// TODO -- handle printing constructed data
 int main(int argc, char **argv)
 {
     entry();
     // printf("INITIAL STACK:\n");
-    // print_stack();
+    // util_print_stack();
     print_node(reduce());
-    // print_node(stack_pop());
     printf("\n");
     return 0;
 }
