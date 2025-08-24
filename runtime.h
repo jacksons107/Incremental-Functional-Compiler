@@ -1,9 +1,11 @@
 #ifndef RUNTIME_H
 #define RUNTIME_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdalign.h>
+#include <string.h>
 
 typedef enum {
     true,
@@ -91,7 +93,7 @@ Node *mk_constr(int64_t arity, char *name);
 Node *mk_struct(char *name, int64_t arity);
 
 /* returns element of struct node at index n */
-Node *unpack_struct(Node*struc, int64_t n);
+Node *unpack_struct(Node* struc, int64_t n);
 
 /* replace the node pointed to by old with an indirection node pointing to result */
 void mk_ind(Node *replace, Node *old);

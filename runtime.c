@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <stdint.h>
 #include "runtime.h"
 #include "utils.h"
+
+Bool debug_enabled = false;
 
 #define HEAP_SIZE 100000
 #define STACK_SIZE 100000
@@ -274,13 +274,14 @@ Node *app_constr(Node *constr) {
     return mk_struct(constr->c_name, constr->c_arity);
 }
 
-// TODO -- add env variables to toggle on debug logs
 Node *unwind(Node *node) {
-    // printf("UNWIND NODE:\n");
-    // util_print_node(node);
-    // printf("\n");
-    // printf("WITH STACK:\n");
-    // util_print_stack();
+    if (debug_enabled == true) {
+        printf("UNWIND NODE:\n");
+        util_print_node(node);
+        printf("\n");
+        printf("WITH STACK:\n");
+        util_print_stack();
+    }
     switch (node->tag) {
         case NODE_INT:
             return node;
@@ -304,8 +305,10 @@ Node *unwind(Node *node) {
             return unwind(node->result);
 
         case NODE_APP:
-            // printf("PUSHING:\n");
-            // util_print_node(node->arg, 1);
+            // if (debug_enabled == true) {
+            //     printf("PUSHING:\n");
+            //     util_print_node(node->arg);
+            // }
             stack_push(node->arg);
             return unwind(node->fn);
 
@@ -389,12 +392,22 @@ void print_node(Node *node) {
     }
 }
 
-// TODO -- handle printing constructed data
 int main(int argc, char **argv)
 {
+    // set debug flag
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--debug") == 0) {
+            debug_enabled = true;
+        }
+    }
+
     entry();
-    // printf("INITIAL STACK:\n");
-    // util_print_stack();
+
+    // if (debug_enabled == true) {
+    //     printf("INITIAL STACK:\n");
+    //     util_print_stack();
+    // }
+
     print_node(reduce());
     printf("\n");
     return 0;
