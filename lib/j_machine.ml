@@ -1,8 +1,9 @@
 type code_ptr =
     | ADD
-    | EQ | ISEMPTY | ISCONS | ISINT
+    | EQ | ISEMPTY | ISCONS | ISINT | ISCONSTR
     | IF
     | CONS | HEAD | TAIL
+    | UNPACK
     | Y
     | I | K | S
 
@@ -16,34 +17,38 @@ type j_instr =
     | APP
 
 let builtin_fn name = match name with
-    | ADD     -> "eval_add"
-    | EQ      -> "eval_eq"
-    | ISEMPTY -> "eval_isempty"
-    | ISCONS  -> "eval_iscons"
-    | ISINT   -> "eval_isint"
-    | IF      -> "eval_if"
-    | CONS    -> "eval_cons"
-    | HEAD    -> "eval_head"
-    | TAIL    -> "eval_tail"
-    | Y       -> "eval_Y"
-    | I       -> "eval_I"
-    | K       -> "eval_K"
-    | S       -> "eval_S"
+    | ADD      -> "eval_add"
+    | EQ       -> "eval_eq"
+    | ISEMPTY  -> "eval_isempty"
+    | ISCONS   -> "eval_iscons"
+    | ISINT    -> "eval_isint"
+    | ISCONSTR -> "eval_isconstr"
+    | IF       -> "eval_if"
+    | CONS     -> "eval_cons"
+    | HEAD     -> "eval_head"
+    | TAIL     -> "eval_tail"
+    | UNPACK   -> "eval_unpack"
+    | Y        -> "eval_Y"
+    | I        -> "eval_I"
+    | K        -> "eval_K"
+    | S        -> "eval_S"
 
 let builtin_name name = match name with
-    | ADD     -> "\"ADD\""
-    | EQ      -> "\"EQ\""
-    | ISEMPTY -> "\"ISEMPTY\""
-    | ISCONS  -> "\"ISCONS\""
-    | ISINT   -> "\"ISINT\""
-    | IF      -> "\"IF\""
-    | CONS    -> "\"CONS\""
-    | HEAD    -> "\"HEAD\""
-    | TAIL    -> "\"TAIL\""
-    | Y       -> "\"Y\""
-    | I       -> "\"I\""
-    | K       -> "\"K\""
-    | S       -> "\"S\""
+    | ADD      -> "\"ADD\""
+    | EQ       -> "\"EQ\""
+    | ISEMPTY  -> "\"ISEMPTY\""
+    | ISCONS   -> "\"ISCONS\""
+    | ISINT    -> "\"ISINT\""
+    | ISCONSTR -> "\"ISCONSTR\""
+    | IF       -> "\"IF\""
+    | CONS     -> "\"CONS\""
+    | HEAD     -> "\"HEAD\""
+    | TAIL     -> "\"TAIL\""
+    | UNPACK   -> "\"UNPACK\""
+    | Y        -> "\"Y\""
+    | I        -> "\"I\""
+    | K        -> "\"K\""
+    | S        -> "\"S\""
 
 let emit_instr instr = match instr with
     | INT n            -> Printf.sprintf "stack_push(mk_int(%d));" n

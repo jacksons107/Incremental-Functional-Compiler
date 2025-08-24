@@ -7,9 +7,10 @@ let rec abstract var exp = match exp with
     | I | K | S
     | CEq | CIsEmpty 
     | CIsCons | CIsInt
+    | CIsConstr
     | CIf
     | CCons | CEmpty
-    | CConstr _
+    | CConstr _ | CUnpack
     | CHead | CTail
     | CFail
     | CY
@@ -29,9 +30,11 @@ let rec lam_to_comb exp = match exp with
     | LCons           -> CCons
     | LEmpty          -> CEmpty
     | LConstr (c, a)  -> CConstr (c, a)
+    | LUnpack         -> CUnpack
     | LIsEmpty        -> CIsEmpty
     | LIsCons         -> CIsCons
     | LIsInt          -> CIsInt
+    | LIsConstr       -> CIsConstr
     | LFail           -> CFail
     | LY              -> CY
     | LPlus           -> CPlus

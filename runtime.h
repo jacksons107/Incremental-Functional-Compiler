@@ -134,6 +134,9 @@ Node *eval_iscons();
 /* pop one node off the stack, return if it is an int node or not (bool node) */
 Node *eval_isint();
 
+/* pop one node off the stack, return if it is a given constr node or not (bool node) */
+Node *eval_isconstr();
+
 /* pop one node off the stack and unwind it (should evaluate to a bool)
    if the bool is true then pop and unwind the next node (true branch), pop the 
    node after to burn it (false branch) and return the true branch
@@ -150,6 +153,12 @@ Node *eval_head();
 /* pop one node off the stack and unwind it (should evaluate to a cons)
    return the second element of the cons */
 Node *eval_tail();
+
+/* pop two nodes off the stack, the first one will be the struct node and the 
+   second will be the index (int node)
+   pass the struct node and the index nodes val field to unpack_struct and return
+   what it returns */
+Node *eval_unpack();
 
 /* pops one node off the stack (should be a fn), creates an empty node as a placeholder, 
    creates an app node of the function onto the empty node, replaces the empty node

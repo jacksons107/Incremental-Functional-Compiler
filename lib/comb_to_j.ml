@@ -18,9 +18,11 @@ let rec pp_comb cexp = match cexp with
   | CCons          -> "CONS"
   | CEmpty         -> "[]"
   | CConstr (c, _) -> "Constr " ^ c
+  | CUnpack        -> "Unpack"
   | CIsEmpty       -> "IsEmpty"
   | CIsCons        -> "IsCons"
   | CIsInt         -> "IsInt"
+  | CIsConstr      -> "IsConstr"
   | CFail          -> "Fail"
   | CApp (f, a)    ->
       let pf = match f with CApp _ -> "(" ^ pp_comb f ^ ")" | _ -> pp_comb f in
@@ -36,10 +38,12 @@ let rec comb_to_j exp = match exp with
     | CHead          -> [GLOBAL (1, HEAD)]
     | CTail          -> [GLOBAL (1, TAIL)]
     | CConstr (c, a) -> [CONSTR (a, c)]
+    | CUnpack        -> [GLOBAL (2, UNPACK)]
     | CEq            -> [GLOBAL (1, EQ)]
     | CIsEmpty       -> [GLOBAL (1, ISEMPTY)]
     | CIsCons        -> [GLOBAL (1, ISCONS)]
     | CIsInt         -> [GLOBAL (1, ISINT)]
+    | CIsConstr      -> [GLOBAL (2, ISCONSTR)]
     | CPlus          -> [GLOBAL (2, ADD)]
     | CIf            -> [GLOBAL (3, IF)]
     | CY             -> [GLOBAL (1, Y)]

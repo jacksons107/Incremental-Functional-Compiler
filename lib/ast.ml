@@ -4,6 +4,7 @@ type pat =
     | PBool of bool
     | PCons of pat * pat
     | PEmpty
+    | PConstr of string * pat list
 
 type exp =
     | Var of string
@@ -13,6 +14,7 @@ type exp =
     | IsEmpty of exp
     | IsCons of exp
     | IsInt of exp
+    | IsConstr of exp * string
     | Plus of exp * exp
     | App of exp * exp
     | Let of string * exp * exp
@@ -23,6 +25,7 @@ type exp =
     | Cons of exp * exp
     | Type of string * string * string list * exp
     | Pack of string * exp list
+    | Unpack of exp * int
     | List of exp list
     | Head of exp
     | Tail of exp

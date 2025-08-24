@@ -10,9 +10,11 @@ type comb_exp =
     | CCons
     | CEmpty
     | CConstr of string * int
+    | CUnpack
     | CIsEmpty
     | CIsCons
     | CIsInt
+    | CIsConstr
     | CFail
     | CY
     | CVar of string

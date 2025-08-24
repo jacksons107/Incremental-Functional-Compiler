@@ -5,14 +5,17 @@ let parse s =
     let ast = Parser.prog Lexer.read lexbuf in
     ast
 
-let rec pp_pattern pat =
-  match pat with
-  | PVar x -> "PVar " ^ x
-  | PInt n -> "PInt " ^ string_of_int n
-  | PBool b -> "PBool " ^ string_of_bool b
-  | PEmpty -> "PEmpty"
-  | PCons (p1, p2) ->
-      "PCons (" ^ pp_pattern p1 ^ ", " ^ pp_pattern p2 ^ ")"
+let rec pp_pattern pat = match pat with
+    | PVar x -> "PVar " ^ x
+    | PInt n -> "PInt " ^ string_of_int n
+    | PBool b -> "PBool " ^ string_of_bool b
+    | PEmpty -> "PEmpty"
+    | PCons (p1, p2) ->
+        "PCons (" ^ pp_pattern p1 ^ ", " ^ pp_pattern p2 ^ ")"
+    | PConstr (s, ps) -> "PConstr (" ^ s ^ ", " ^ "(" ^ pp_patlist ps ^ "))"
+and pp_patlist list = match list with
+    | [] -> ""
+    | (x::xs) -> pp_pattern x ^ ", " ^ pp_patlist xs
 
 let rec pp_list list = match list with
     | [] -> ""
@@ -32,6 +35,8 @@ and pp_ast exp = match exp with
     | Empty   -> "[]"
     | Type (n, c, a, r) -> "Type (" ^ n ^ ", " ^ c ^ ", " ^ "(" ^ pp_list a ^ "), " ^ pp_ast r ^ ")"
     | Pack (c, a) -> "Pack (" ^ c ^ ", " ^ "(" ^ pp_explist a ^ "))"
+    | Unpack (e, i) -> "Unack (" ^ pp_ast e ^ ", " ^ string_of_int i ^ ")"
+    | IsConstr (e, s) -> "IsConstr (" ^ pp_ast e ^ ", " ^ s ^ ")"
     | Fail    -> "Fail"
     | Cons (e1, e2) -> "CONS (" ^ pp_ast e1 ^ ", " ^ pp_ast e2 ^ ")"
     | List l -> "[" ^ pp_explist l ^ "]"
@@ -89,28 +94,36 @@ let exp14 = "def lit_test pair = match pair with
                 | (1, y) -> y + 1 in
             lit_test (Cons (1, 3))"
 
-let exp15 = "type test = Test int int int in 69"
+let exp15 = "type test = Test of int * int * int in 69"
 
-let exp16 = "type test = Test int int int in
+let exp16 = "type test = Test of int * int * int in
              Test (1, 2, 3)"
 
+let exp17 = "type test = Test of int * int * int in
+            let t = Test (1, 2, 3) in
+            match t with
+                []             -> []
+                | Test (x, y, z) -> Test (z, y, x)"
+
 let () = 
-    print_endline (pp_ast (parse exp1));
-    print_endline (pp_ast (parse exp2));
-    print_endline (pp_ast (parse exp3));
-    print_endline (pp_ast (parse exp4));
-    print_endline (pp_ast (parse exp5));
-    print_endline (pp_ast (parse exp6));
-    print_endline (pp_ast (parse exp7));
-    print_endline (pp_ast (parse exp8));
-    print_endline (pp_ast (parse exp9));
-    print_endline (pp_ast (parse exp10));
-    print_endline (pp_ast (parse exp11));
-    print_endline (pp_ast (parse exp12));
-    print_endline (pp_ast (parse exp13));
-    print_endline (pp_ast (parse exp14));
-    print_endline (pp_ast (parse exp15));
-    print_endline (pp_ast (parse exp16))
+    print_endline ("parse-1: " ^ (pp_ast (parse exp1)));
+    print_endline ("parse-2: " ^ (pp_ast (parse exp2)));
+    print_endline ("parse-3: " ^ (pp_ast (parse exp3)));
+    print_endline ("parse-4: " ^ (pp_ast (parse exp4)));
+    print_endline ("parse-5: " ^ (pp_ast (parse exp5)));
+    print_endline ("parse-6: " ^ (pp_ast (parse exp6)));
+    print_endline ("parse-7: " ^ (pp_ast (parse exp7)));
+    print_endline ("parse-8: " ^ (pp_ast (parse exp8)));
+    print_endline ("parse-9: " ^ (pp_ast (parse exp9)));
+    print_endline ("parse-10: " ^ (pp_ast (parse exp10)));
+    print_endline ("parse-11: " ^ (pp_ast (parse exp11)));
+    print_endline ("parse-12: " ^ (pp_ast (parse exp12)));
+    print_endline ("parse-13: " ^ (pp_ast (parse exp13)));
+    print_endline ("parse-14: " ^ (pp_ast (parse exp14)));
+    print_endline ("parse-15: " ^ (pp_ast (parse exp15)));
+    print_endline ("parse-16: " ^ (pp_ast (parse exp16)));
+    print_endline ("parse-17: " ^ (pp_ast (parse exp17)));
+    
 
 
 

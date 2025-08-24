@@ -3,13 +3,14 @@
 
 Bool debug_enabled = false;
 
-#define HEAP_SIZE 100000
-#define STACK_SIZE 100000
+#define HEAP_SIZE (8 * 1024 * 1024)   // 8 MB total (4 MB usable semi-space)
+#define STACK_SIZE (128 * 1024)       // 128K entries ~ 1 MB
 
 // initialize the heap and heap pointer
 uint8_t heap[HEAP_SIZE];
 size_t hp = 0;
 
+// TODO -- detect stack overflow
 // initialize the stack and stack pointer
 Node *stack[STACK_SIZE];
 int sp = 0;
@@ -186,10 +187,15 @@ Node *eval_eq() {
 
     NodeTag tag1 = val1->tag;
     NodeTag tag2 = val2->tag;
-    if (tag1 == NODE_INT) {
+
+    // this first case should be impossible with type checking
+    if (tag1 != tag2) {
+        return mk_bool(false);
+    }
+    else if (tag1 == NODE_INT && tag2 == NODE_INT) {
         if (val1->val == val2->val) {return mk_bool(true);} else {return mk_bool(false);}
     } 
-    else if (tag1 == NODE_BOOL) {
+    else if (tag1 == NODE_BOOL && tag2 == NODE_BOOL) {
         if (val1->cond == val2->cond) {return mk_bool(true);} else {return mk_bool(false);}
     }
     else if (tag1 == NODE_EMPTY && tag2 == NODE_EMPTY) {
@@ -219,6 +225,18 @@ Node *eval_isint() {
     Node *node = unwind(stack_pop());
 
     if (node->tag == NODE_INT) {return mk_bool(true);} else {return mk_bool(false);}
+}
+
+Node *eval_isconstr() {
+    Node *exp = unwind(stack_pop());
+    Node *constr = stack_pop(); // should NOT unwind, TODO -- better way to do comparison in IsConstr?
+
+    if (exp->tag == NODE_STRUCT && strcmp(exp->s_name, constr->c_name)) {
+        return mk_bool(true);
+    } 
+    else {
+        return mk_bool(false);
+    }
 }
 
 Node *eval_if() {
@@ -254,6 +272,21 @@ Node *eval_tail() {
     return cons->e2;
 }
 
+Node *eval_unpack() {
+    Node *struc = unwind(stack_pop());
+    Node *idx = unwind(stack_pop());
+
+    if (debug_enabled == true) {
+        printf("Unpacking: ");
+        util_print_node(struc);
+        printf(" at idx: ");
+        util_print_node(idx);
+        printf("\n");
+    }
+
+    return unpack_struct(struc, idx->val);
+}
+
 Node *eval_Y() {
     Node *f = stack_pop();
 
@@ -275,13 +308,13 @@ Node *app_constr(Node *constr) {
 }
 
 Node *unwind(Node *node) {
-    if (debug_enabled == true) {
-        printf("UNWIND NODE:\n");
-        util_print_node(node);
-        printf("\n");
-        printf("WITH STACK:\n");
-        util_print_stack();
-    }
+    // if (debug_enabled == true) {
+    //     printf("UNWIND NODE:\n");
+    //     util_print_node(node);
+    //     printf("\n");
+    //     printf("WITH STACK:\n");
+    //     util_print_stack();
+    // }
     switch (node->tag) {
         case NODE_INT:
             return node;

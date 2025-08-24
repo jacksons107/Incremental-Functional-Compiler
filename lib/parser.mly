@@ -68,6 +68,7 @@ pat:
     | b = BOOL {PBool b}
     | v = VAR {PVar v}
     | LPAREN; e1 = pat; COMMA; e2 = pat; RPAREN {PCons (e1, e2)}
+    | c = CONSTR; LPAREN; a = separated_list(COMMA, pat); RPAREN {PConstr (c, a)}
     | EMPTY {PEmpty}
 
 bool_exp:

@@ -9,12 +9,12 @@ let rec list_to_cons list = match list with
     | []      -> Empty
     | (x::xs) -> Cons (x, list_to_cons xs)
 
-let rec match_sum scrut cases =
-    match cases with
+let rec match_sum scrut cases = match cases with
     | [] -> Fail
     | (p, e) :: cs ->
         match_prod scrut p e (match_sum scrut cs)
 
+(* TODO -- add fallback case _ for pattern matching  *)
 and match_prod scrut pat expr on_fail =
     match pat with
     | PVar x ->
@@ -32,9 +32,21 @@ and match_prod scrut pat expr on_fail =
     | PCons (p1, p2) ->
         If (IsCons scrut,
                 match_prod (Head scrut) p1
-                (match_prod (Tail scrut) p2 expr on_fail)
-                on_fail,
-            on_fail)
+                    (match_prod (Tail scrut) p2 expr on_fail)
+                        on_fail,
+                on_fail)
+
+    | PConstr (name, args) ->
+        If (IsConstr (scrut, name),
+                match_chain scrut args expr on_fail 0,
+                on_fail)
+
+and match_chain scrut args expr on_fail idx = match args with
+    | []    -> expr
+    | x::xs -> match_prod (Unpack (scrut, idx)) 
+                              x 
+                                (match_chain scrut xs expr on_fail (idx + 1)) 
+                                    on_fail
 
 
 let rec ast_to_elam ast = match ast with
@@ -47,6 +59,7 @@ let rec ast_to_elam ast = match ast with
     | IsEmpty e                       -> EApp (EIsEmpty, ast_to_elam e)
     | IsCons e                        -> EApp (EIsCons, ast_to_elam e)
     | IsInt e                         -> EApp (EIsInt, ast_to_elam e)
+    | IsConstr (e, name)              -> EApp (EApp (EIsConstr, ast_to_elam e), EConstr (name, -1))
     | Plus (e1, e2)                   -> EApp (EApp (EPlus, ast_to_elam e1), ast_to_elam e2)
     | If (b, e1, e2)                  -> EApp (EApp (EApp (EIf, ast_to_elam b), ast_to_elam e1), ast_to_elam e2)
     | Head c                          -> EApp (EHead, ast_to_elam c)
@@ -54,6 +67,7 @@ let rec ast_to_elam ast = match ast with
     | Cons (e1, e2)                   -> EApp (EApp (ECons, ast_to_elam e1), ast_to_elam e2)
     | Type (_, name, args, rest)      -> ELet (name, EConstr (name, List.length args), ast_to_elam rest)
     | Pack (name, args)               -> app_constr (EVar name) (List.rev args)
+    | Unpack (struc, idx)             -> EApp (EApp (EUnpack, ast_to_elam struc), EInt idx)
     | List d                          -> ast_to_elam (list_to_cons d)
     | Let (var, b, e)                 -> ELet (var, ast_to_elam b, ast_to_elam e)
     | Def (name, vars, body, rest)    -> ELet (name, curry vars (ast_to_elam body), ast_to_elam rest)
@@ -61,5 +75,5 @@ let rec ast_to_elam ast = match ast with
     | Fail                            -> EFail
     | Match (scrut, cases)            -> ast_to_elam (match_sum scrut cases)
 and app_constr constr args = match args with
-    | []    -> constr
+    | []      -> constr
     | (x::xs) -> EApp (app_constr constr xs, ast_to_elam x)

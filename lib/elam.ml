@@ -11,9 +11,11 @@ type elam_exp =
     | ECons
     | EEmpty
     | EConstr of string * int
+    | EUnpack
     | EIsEmpty
     | EIsCons
     | EIsInt
+    | EIsConstr
     | EFail
     | EApp of elam_exp * elam_exp
     | ELam of string * elam_exp

@@ -15,6 +15,8 @@ let rec pp_elam elam_exp = match elam_exp with
     | EIsCons -> "IsCons"
     | EIsInt -> "IsInt"
     | EPlus -> "+"
+    | EUnpack -> "Unpack"
+    | EIsConstr -> "IsConstr"
     | EIf -> "If"
     | EY -> "Y"
     | EHead -> "HEAD"
@@ -27,6 +29,11 @@ let rec pp_elam elam_exp = match elam_exp with
     | ELam (v, b) -> "(lambda (" ^ v ^ ") (" ^ pp_elam b ^ "))"
     | ELet (v, b, e) -> "(let " ^ v ^ " = " ^ pp_elam b ^ " in " ^ pp_elam e ^ ")"
 
-let exp = "type test = Test int int int in 69"
+let exp = "type test = Test of int * cons * int in
+            type result = Res of int * int * int * int in
+            let t = Test (1, Cons (2, 3), 4) in
+            match t with
+                Test (w, (x, 8008), z)              -> 420
+                | Test (w, (x, 3), z)  -> Res (z, 69, x, w)"
 
 let () = print_endline (pp_elam (ast_to_elam (parse exp)))

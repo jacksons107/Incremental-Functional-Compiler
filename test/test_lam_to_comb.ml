@@ -12,13 +12,15 @@ let rec pp_comb = function
   | CIsCons        -> "IsCons"
   | CIsInt         -> "CIsInt"
   | CIf            -> "IF"
-  | CHead          -> "HEAD"
-  | CTail          -> "TAIL"
+  | CHead          -> "head"
+  | CTail          -> "tail"
+  | CUnpack        -> "Unpack"
+  | CIsConstr      -> "IsConstr"
   | CY             -> "Y"
   | CInt n         -> string_of_int n
   | CBool b        -> string_of_bool b
   | CVar v         -> v
-  | CCons          -> "CONS"
+  | CCons          -> "Cons"
   | CEmpty         -> "[]"
   | CConstr (c, _) -> "Constr " ^ c
   | CFail          -> "Fail"
