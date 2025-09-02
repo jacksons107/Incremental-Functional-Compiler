@@ -33,7 +33,7 @@ let exp = "type test = Test of int * cons * int in
             type result = Res of int * int * int * int in
             let t = Test (1, Cons (2, 3), 4) in
             match t with
-                Test (w, (x, 8008), z)              -> 420
+                Test (w, (8, y), z)  -> 420
                 | Test (w, (x, 3), z)  -> Res (z, 69, x, w)"
 
 let () = print_endline (pp_elam (ast_to_elam (parse exp)))

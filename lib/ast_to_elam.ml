@@ -1,5 +1,6 @@
 open Ast
 open Elam
+open Patterns
 
 let rec curry vars body = match vars with
     | []      -> body
@@ -8,46 +9,6 @@ let rec curry vars body = match vars with
 let rec list_to_cons list = match list with
     | []      -> Empty
     | (x::xs) -> Cons (x, list_to_cons xs)
-
-let rec match_sum scrut cases = match cases with
-    | [] -> Fail
-    | (p, e) :: cs ->
-        match_prod scrut p e (match_sum scrut cs)
-
-(* TODO -- add fallback case _ for pattern matching  *)
-and match_prod scrut pat expr on_fail =
-    match pat with
-    | PVar x ->
-        Let (x, scrut, expr)
-
-    | PInt n ->
-        If (Eq (scrut, Int n), expr, on_fail)
-
-    | PBool b ->
-        If (Eq (scrut, Bool b), expr, on_fail)
-
-    | PEmpty ->
-        If (IsEmpty scrut, expr, on_fail)
-
-    | PCons (p1, p2) ->
-        If (IsCons scrut,
-                match_prod (Head scrut) p1
-                    (match_prod (Tail scrut) p2 expr on_fail)
-                        on_fail,
-                on_fail)
-
-    | PConstr (name, args) ->
-        If (IsConstr (scrut, name),
-                match_chain scrut args expr on_fail 0,
-                on_fail)
-
-and match_chain scrut args expr on_fail idx = match args with
-    | []    -> expr
-    | x::xs -> match_prod (Unpack (scrut, idx)) 
-                              x 
-                                (match_chain scrut xs expr on_fail (idx + 1)) 
-                                    on_fail
-
 
 let rec ast_to_elam ast = match ast with
     | Var x                           -> EVar x
@@ -73,7 +34,7 @@ let rec ast_to_elam ast = match ast with
     | Def (name, vars, body, rest)    -> ELet (name, curry vars (ast_to_elam body), ast_to_elam rest)
     | Defrec (name, vars, body, rest) -> ELet (name, EApp (EY, curry ([name] @ vars) (ast_to_elam body)), ast_to_elam rest)
     | Fail                            -> EFail
-    | Match (scrut, cases)            -> ast_to_elam (match_sum scrut cases)
+    | Match (scrut, cases)            -> ast_to_elam (compile_match (Scruts scrut) (Matrix cases))
 and app_constr constr args = match args with
     | []      -> constr
     | (x::xs) -> EApp (app_constr constr xs, ast_to_elam x)

@@ -51,7 +51,7 @@ exp:
     | DEF; n = VAR; v = list(VAR); BIND; e = exp; IN; r = exp {Def (n, v, e, r)}
     | DEFREC; n = VAR; v = list(VAR); BIND; e = exp; IN; r = exp {Defrec (n, v, e, r)}
     | TYPE; n = VAR; BIND; c = CONSTR; OF; a = separated_list(STAR, VAR); IN; r = exp {Type (n, c, a, r)}
-    | MATCH; scrut = exp; WITH; cases = match_cases {Match (scrut, cases)}
+    | MATCH; scrut = exp; WITH; cases = match_cases {Match ([scrut], cases)}
     | IF; b = exp; THEN; e1 = exp; ELSE; e2 = exp {If (b, e1, e2)}
     | e = bool_exp {e}
 
@@ -61,7 +61,7 @@ match_cases:
 
 
 match_case:
-    | p = pat; ARROW; e = exp {(p, e)}
+    | p = pat; ARROW; e = exp {([p], e)}
 
 pat:
     | i = INT {PInt i}

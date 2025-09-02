@@ -20,7 +20,7 @@ type exp =
     | Let of string * exp * exp
     | Def of string * string list * exp * exp
     | Defrec of string * string list * exp * exp
-    | Match of exp * (pat * exp) list
+    | Match of exp list * (pat list * exp) list
     | If of exp * exp * exp
     | Cons of exp * exp
     | Type of string * string * string list * exp

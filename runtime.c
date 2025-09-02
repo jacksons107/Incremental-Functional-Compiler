@@ -10,6 +10,31 @@ Bool debug_enabled = false;
 uint8_t heap[HEAP_SIZE];
 size_t hp = 0;
 
+// uint8_t heap1[HEAP_SIZE / 2];
+// size_t hp1 = 0;
+// uint8_t heap2[HEAP_SIZE / 2];
+// size_t hp2 = HEAP_SIZE / 2;
+
+// hp = hp1
+
+// void move_node(Node *node) {
+
+// }
+
+
+// void collect_garbage() {
+
+//     for (int i = sp; i != 0; i--) {
+//         Node *node = stack[i];
+//         // copy node to other heap
+//         if (node->tag == NODE_APP || node->tag == NODE_CONS
+//             || node->tag == NODE_IND || node->tag == NODE_APP)
+//         {
+//             // copy children to other heap
+//         }
+//     }
+// }
+
 // TODO -- detect stack overflow
 // initialize the stack and stack pointer
 Node *stack[STACK_SIZE];

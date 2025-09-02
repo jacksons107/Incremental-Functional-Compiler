@@ -50,10 +50,10 @@ and pp_ast exp = match exp with
     | Defrec (n, v, e, r) -> "Defrec (" ^ n ^ ", " ^ (String.concat " " v) ^ ", " ^ pp_ast e ^ ", " ^ pp_ast r ^ ")"
     | Match (scrut, clauses) ->
         let pp_clause (p, e) =
-        "(" ^ pp_pattern p ^ " -> " ^ pp_ast e ^ ")"
+        "(" ^ pp_patlist p ^ " -> " ^ pp_ast e ^ ")"
         in
         let clauses_str = String.concat "; " (List.map pp_clause clauses) in
-        "Match (" ^ pp_ast scrut ^ ", [" ^ clauses_str ^ "])"
+        "Match (" ^ pp_explist scrut ^ ", [" ^ clauses_str ^ "])"
 
 
 
@@ -105,6 +105,13 @@ let exp17 = "type test = Test of int * int * int in
                 []             -> []
                 | Test (x, y, z) -> Test (z, y, x)"
 
+let exp18 = "let test = Cons (69, 420) in
+                match test with 
+                    (1, 2) -> 1
+                    | (3, 4) -> 2
+                    | (5, 6) -> 3
+                    | (69, 420) -> 420"
+
 let () = 
     print_endline ("parse-1: " ^ (pp_ast (parse exp1)));
     print_endline ("parse-2: " ^ (pp_ast (parse exp2)));
@@ -123,7 +130,8 @@ let () =
     print_endline ("parse-15: " ^ (pp_ast (parse exp15)));
     print_endline ("parse-16: " ^ (pp_ast (parse exp16)));
     print_endline ("parse-17: " ^ (pp_ast (parse exp17)));
-    
+    print_endline ("parse-18: " ^ (pp_ast (parse exp18)));
+
 
 
 
