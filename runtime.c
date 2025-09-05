@@ -3,37 +3,18 @@
 
 Bool debug_enabled = false;
 
-#define HEAP_SIZE (8 * 1024 * 1024)   // 8 MB total (4 MB usable semi-space)
+#define HEAP_SIZE (4 * 1024 * 1024)   // 8 MB total (4 MB usable semi-space)
 #define STACK_SIZE (128 * 1024)       // 128K entries ~ 1 MB
 
 // initialize the heap and heap pointer
-uint8_t heap[HEAP_SIZE];
-size_t hp = 0;
+uint8_t heap1[HEAP_SIZE];
+uint8_t heap2[HEAP_SIZE];
 
-// uint8_t heap1[HEAP_SIZE / 2];
-// size_t hp1 = 0;
-// uint8_t heap2[HEAP_SIZE / 2];
-// size_t hp2 = HEAP_SIZE / 2;
+uint8_t *from_space = heap1;
+uint8_t *to_space = heap2;
 
-// hp = hp1
-
-// void move_node(Node *node) {
-
-// }
-
-
-// void collect_garbage() {
-
-//     for (int i = sp; i != 0; i--) {
-//         Node *node = stack[i];
-//         // copy node to other heap
-//         if (node->tag == NODE_APP || node->tag == NODE_CONS
-//             || node->tag == NODE_IND || node->tag == NODE_APP)
-//         {
-//             // copy children to other heap
-//         }
-//     }
-// }
+size_t hp = 0; // offset into from_space
+size_t to_hp = 0; // offset into to_space
 
 // TODO -- detect stack overflow
 // initialize the stack and stack pointer
@@ -43,22 +24,134 @@ int sp = 0;
 // program graph constructed by the compiler
 extern void entry();
 
-void *heap_alloc(size_t size, size_t align) {
-    size_t misalign = hp % align;
+
+void collect_garbage() {
+    // reset to_space heap pointer
+    to_hp = 0;
+
+    // copy root nodes on stack to to_space
+    for (int i = 0; i < sp; i++) {
+        stack[i] = copy_to_space(stack[i]);
+    }
+
+    // scan to_space for references
+    size_t scan = 0;
+    size_t size;
+    while (scan < to_hp) {
+        Node *node = (Node *)(to_space + scan);
+        copy_refs_to_space(node);
+        // scan += sizeof(Node);
+        if (node->tag == NODE_STRUCT) {
+            size = sizeof(Node) + node->s_arity * sizeof(Node *);
+        } 
+        else {
+            size = sizeof(Node);
+        }
+        scan += size;
+    }
+    
+    // swap from_space and to_space
+    uint8_t *temp = from_space;
+    from_space = to_space;
+    to_space = temp;
+
+    // move heap pointer to new heap
+    hp = to_hp;
+}
+
+void copy_refs_to_space(Node *node) {
+    switch (node->tag) {
+        case NODE_CONS:
+            node->e1 = copy_to_space(node->e1);
+            node->e2 = copy_to_space(node->e2);
+            break;
+
+        case NODE_STRUCT:
+            for (int64_t i = 0; i < node->s_arity; i++) {
+                node->fields[i] = copy_to_space(node->fields[i]);
+            }
+            break;
+        
+        case NODE_IND:
+            node->result = copy_to_space(node->result);
+            break;
+
+        case NODE_APP:
+            node->fn = copy_to_space(node->fn);
+            node->arg = copy_to_space(node->arg);
+            break;
+        case FORWARDED:
+            printf("Forwarded node found in to_space\n");
+            exit(-1);
+        default:
+            break;
+    }
+}
+
+Bool in_from_space(const void *p) {
+    if (!p) return false;
+    uint8_t *q = (uint8_t*)p;
+    if (q >= from_space && q < (from_space + HEAP_SIZE/2)){
+        return true;
+    } 
+    return false;
+}
+
+Node *copy_to_space(Node *node) {
+    if (!node) return NULL;
+    if (node->tag == FORWARDED) return node->forwarded;
+    if (in_from_space(node) == true) return node;
+
+
+    size_t size;
+    if (node->tag == NODE_STRUCT) {
+        size = sizeof(Node) + node->s_arity * sizeof(Node *);
+    } else {
+        size = sizeof(Node);
+    }
+
+    Node *new_node = to_alloc(size, alignof(Node));
+    memcpy(new_node, node, size);
+
+    node->tag = FORWARDED;
+    node->forwarded = new_node;
+
+    return new_node;
+}
+
+void *alloc(uint8_t *space, size_t *hp, size_t size, size_t align) {
+    // align heap pointer
+    size_t misalign = *hp % align;
     if (misalign != 0) {
-        hp += align - misalign;
+        *hp += align - misalign;
     }
 
-    // eventually this will trigger garbage collection
-    if (hp + size > HEAP_SIZE) {
-        fprintf(stderr, "Out of heap memory!\n");
-        exit(1);
-    }
-
-    void *ptr = &heap[hp];
-    hp += size;
+    void *ptr = &space[*hp];
+    *hp += size;
 
     return ptr;
+}
+
+void *to_alloc(size_t size, size_t align) {
+    if (to_hp + size > HEAP_SIZE / 2) {
+        printf("Out of memory\n");
+        exit(-1);
+    }
+
+    return alloc(to_space, &to_hp, size, align);
+}
+
+void *heap_alloc(size_t size, size_t align) {
+    if (hp + size > HEAP_SIZE / 2) {
+        collect_garbage();
+
+        if (hp + size > HEAP_SIZE / 2) {
+            printf("Out of memory\n");
+            exit(-1);
+        }
+    }
+
+    return alloc(from_space, &hp, size, align);
 }
 
 Node *mk_int(int64_t val) {
@@ -111,17 +204,13 @@ Node *mk_constr(int64_t arity, char *name) {
 }
 
 Node *mk_struct(char *name, int64_t arity) {
-    Node *node = heap_alloc(sizeof(Node), alignof(Node));
+     Node *node = heap_alloc(sizeof(Node) + sizeof(Node*) * arity, alignof(Node));
     node->tag = NODE_STRUCT;
     node->s_name = name;
     node->s_arity = arity;
-    
-    Node **fields = heap_alloc(sizeof(Node*) * arity, alignof(Node*));
-
-    node->fields = fields;
 
     for (int64_t i = 0; i < arity; i++) {
-        fields[i] = stack_pop();
+        node->fields[i] = stack_pop();
     }
 
     return node;
@@ -137,7 +226,7 @@ Node *unpack_struct(Node *struc, int64_t n) {
 }
 
 Node *mk_app(Node *fn, Node *arg) {
-    Node *node = heap_alloc(sizeof(Node), alignof(Node));
+ Node *node = heap_alloc(sizeof(Node), alignof(Node));
     node->tag = NODE_APP;
     node->fn = fn;
     node->arg = arg;
@@ -146,7 +235,7 @@ Node *mk_app(Node *fn, Node *arg) {
 }
 
 Node *mk_cons(Node *e1, Node *e2) {
-    Node *node = heap_alloc(sizeof(Node), alignof(Node));
+ Node *node = heap_alloc(sizeof(Node), alignof(Node));
     node->tag = NODE_CONS;
     node->e1 = e1;
     node->e2 = e2;
@@ -301,13 +390,13 @@ Node *eval_unpack() {
     Node *struc = unwind(stack_pop());
     Node *idx = unwind(stack_pop());
 
-    if (debug_enabled == true) {
-        printf("Unpacking: ");
-        util_print_node(struc);
-        printf(" at idx: ");
-        util_print_node(idx);
-        printf("\n");
-    }
+    // if (debug_enabled == true) {
+    //     printf("Unpacking: ");
+    //     util_print_node(struc);
+    //     printf(" at idx: ");
+    //     util_print_node(idx);
+    //     printf("\n");
+    // }
 
     return unpack_struct(struc, idx->val);
 }
@@ -333,13 +422,13 @@ Node *app_constr(Node *constr) {
 }
 
 Node *unwind(Node *node) {
-    // if (debug_enabled == true) {
-    //     printf("UNWIND NODE:\n");
-    //     util_print_node(node);
-    //     printf("\n");
-    //     printf("WITH STACK:\n");
-    //     util_print_stack();
-    // }
+    if (debug_enabled == true) {
+        printf("UNWIND NODE:\n");
+        util_print_node(node);
+        printf("\n");
+        printf("WITH STACK:\n");
+        util_print_stack();
+    }
     switch (node->tag) {
         case NODE_INT:
             return node;
@@ -383,8 +472,13 @@ Node *unwind(Node *node) {
                 return app_constr(node);
             }
             else {
-                return node;    // TODO -- should this be an error, will type checker catch it?
+                printf("Not enough args for constr\n");
+                exit(-1);
             }
+
+        case FORWARDED:
+            printf("Trying to unwind forwarded node\n");
+            exit(-1);
     }
 }
 

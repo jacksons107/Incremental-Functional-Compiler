@@ -7,6 +7,7 @@
 #include <stdalign.h>
 #include <string.h>
 
+// TODO -- replace Bool with stdbool
 typedef enum {
     true,
     false
@@ -23,6 +24,7 @@ typedef enum {
     NODE_IND,
     NODE_CONSTR,
     NODE_STRUCT,
+    FORWARDED,
 } NodeTag;
 
 typedef struct Node {
@@ -30,6 +32,7 @@ typedef struct Node {
     union {
         int64_t val;                            // NODE_INT
         Bool cond;                              // NODE_BOOL
+        struct Node *forwarded;                        // FORWARDED
         struct {                                // NODE_APP
             struct Node *fn;
             struct Node *arg;
@@ -51,7 +54,8 @@ typedef struct Node {
         struct {                                // NODE_STRUCT
             char *s_name;
             int64_t s_arity;
-            struct Node **fields;
+            // struct Node **fields;
+            struct Node *fields[];
         };
     };                                          // NODE_EMPTY & NODE_FAIL (don't point to anything)
 } Node;
@@ -62,7 +66,28 @@ extern size_t hp;
 extern Node *stack[];
 extern int sp;
 
-/* allocate an object on the heap and return a pointer to it */
+/* free up heap space by copying live nodes in from_space to to_space */
+void collect_garbage();
+
+
+void copy_refs_to_space(Node *node);
+
+/* copy node from from_space to to_space and return the pointer to the to_space node
+   allocs a new node in to_space, sets all the fields to be the same as the 
+   original node, then set the original node tag to forwarded and forwarded field to
+   the to_space node (so that multiple copies aren't made)*/
+Node *copy_to_space(Node *node);
+
+
+Node **copy_fields_to_space(Node **fields, uint64_t arity);
+
+
+void *alloc(uint8_t *space, size_t *hp, size_t size, size_t align);
+
+
+void *to_alloc(size_t size, size_t align);
+
+/* allocate an object on the heap (from_space) and return a pointer to it */
 void *heap_alloc(size_t size, size_t align);
 
 /* makes an int node and returns a pointer to it to be pushed onto the stack */

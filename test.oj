@@ -1,6 +1,1 @@
-type test = Test of int * cons * int in
-type result = Res of int * int * int * int in
-let t = Test (1, Cons (2, 3), 4) in
-match t with
-      Test (w, (8, y), z)  -> 420
-    | Test (w, (x, 3), z)  -> Res (z, 69, x, w)
+defrec inf_list n = Cons (n, inf_list (n + 1)) in inf_list 0
