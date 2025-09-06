@@ -12,6 +12,9 @@ void util_print_indent(int indent, const char *prefix);
 /* prints a node in s-expression form */
 void util_print_node(Node *node);
 
+/* prints the tag of a node */
+void util_print_tag(Node *node);
+
 /* prints a node in tree form*/
 void util_print_tree(Node *node, int indent);
 

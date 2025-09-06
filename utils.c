@@ -94,11 +94,15 @@ void util_print_node(Node *node) {
     }
 }
 
+void util_print_tag(Node *node) {
+    printf("Tag: %d\n", node->tag);
+}
+
 void util_print_stack() {
     printf("____Stack_____\n");
     for (int i=0; i<sp; i++) {
         // printf("  __Node__\n");
-        util_print_node(stack[i]);
+        util_print_tag(stack[i]);
         printf("\n");
         // printf("  __End__\n");
     }

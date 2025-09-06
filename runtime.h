@@ -69,7 +69,7 @@ extern int sp;
 /* free up heap space by copying live nodes in from_space to to_space */
 void collect_garbage();
 
-
+/* copy references of nodes in to_space to to_space */
 void copy_refs_to_space(Node *node);
 
 /* copy node from from_space to to_space and return the pointer to the to_space node
@@ -78,13 +78,10 @@ void copy_refs_to_space(Node *node);
    the to_space node (so that multiple copies aren't made)*/
 Node *copy_to_space(Node *node);
 
-
-Node **copy_fields_to_space(Node **fields, uint64_t arity);
-
-
+/* allocates size worth of space  to given heap */
 void *alloc(uint8_t *space, size_t *hp, size_t size, size_t align);
 
-
+/* allocates an object on the to_space heap and returns a pointer to it */
 void *to_alloc(size_t size, size_t align);
 
 /* allocate an object on the heap (from_space) and return a pointer to it */
@@ -196,8 +193,8 @@ void stack_push(Node *node);
 /* pop a node off the stack */
 Node *stack_pop();
 
-/* peak at top node of stack */
-Node *stack_peak();
+/* peak at nth from the top node of stack */
+Node *stack_peak(int n);
 
 /* unwind the program graph and apply the leftmost outermost redex */
 Node *unwind(Node *node);

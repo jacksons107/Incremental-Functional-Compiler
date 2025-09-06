@@ -3,7 +3,7 @@
 
 Bool debug_enabled = false;
 
-#define HEAP_SIZE (4 * 1024 * 1024)   // 8 MB total (4 MB usable semi-space)
+#define HEAP_SIZE (4 * 1024 * 1024)   // 4 MB per semi-space
 #define STACK_SIZE (128 * 1024)       // 128K entries ~ 1 MB
 
 // initialize the heap and heap pointer
@@ -21,11 +21,16 @@ size_t to_hp = 0; // offset into to_space
 Node *stack[STACK_SIZE];
 int sp = 0;
 
+
+Node *reg[1];
+
 // program graph constructed by the compiler
 extern void entry();
 
 
 void collect_garbage() {
+    printf("COLLECTING\n");
+    // util_print_stack();
     // reset to_space heap pointer
     to_hp = 0;
 
@@ -33,6 +38,8 @@ void collect_garbage() {
     for (int i = 0; i < sp; i++) {
         stack[i] = copy_to_space(stack[i]);
     }
+
+    reg[0] = copy_to_space(reg[0]);
 
     // scan to_space for references
     size_t scan = 0;
@@ -57,6 +64,8 @@ void collect_garbage() {
 
     // move heap pointer to new heap
     hp = to_hp;
+    printf("DONE\n");
+    // util_print_stack();
 }
 
 void copy_refs_to_space(Node *node) {
@@ -88,20 +97,9 @@ void copy_refs_to_space(Node *node) {
     }
 }
 
-Bool in_from_space(const void *p) {
-    if (!p) return false;
-    uint8_t *q = (uint8_t*)p;
-    if (q >= from_space && q < (from_space + HEAP_SIZE/2)){
-        return true;
-    } 
-    return false;
-}
-
 Node *copy_to_space(Node *node) {
     if (!node) return NULL;
     if (node->tag == FORWARDED) return node->forwarded;
-    if (in_from_space(node) == true) return node;
-
 
     size_t size;
     if (node->tag == NODE_STRUCT) {
@@ -133,7 +131,7 @@ void *alloc(uint8_t *space, size_t *hp, size_t size, size_t align) {
 }
 
 void *to_alloc(size_t size, size_t align) {
-    if (to_hp + size > HEAP_SIZE / 2) {
+    if (to_hp + size > HEAP_SIZE) {
         printf("Out of memory\n");
         exit(-1);
     }
@@ -142,10 +140,10 @@ void *to_alloc(size_t size, size_t align) {
 }
 
 void *heap_alloc(size_t size, size_t align) {
-    if (hp + size > HEAP_SIZE / 2) {
+    if (hp + size > HEAP_SIZE) {
         collect_garbage();
 
-        if (hp + size > HEAP_SIZE / 2) {
+        if (hp + size > HEAP_SIZE) {
             printf("Out of memory\n");
             exit(-1);
         }
@@ -204,7 +202,7 @@ Node *mk_constr(int64_t arity, char *name) {
 }
 
 Node *mk_struct(char *name, int64_t arity) {
-     Node *node = heap_alloc(sizeof(Node) + sizeof(Node*) * arity, alignof(Node));
+    Node *node = heap_alloc(sizeof(Node) + sizeof(Node*) * arity, alignof(Node));
     node->tag = NODE_STRUCT;
     node->s_name = name;
     node->s_arity = arity;
@@ -226,24 +224,37 @@ Node *unpack_struct(Node *struc, int64_t n) {
 }
 
 Node *mk_app(Node *fn, Node *arg) {
- Node *node = heap_alloc(sizeof(Node), alignof(Node));
+    stack_push(fn);
+    stack_push(arg);
+    Node *node = heap_alloc(sizeof(Node), alignof(Node));
     node->tag = NODE_APP;
-    node->fn = fn;
-    node->arg = arg;
+    // node->fn = fn;
+    // node->arg = arg;
+    node->arg = stack_pop();
+    node->fn = stack_pop();
 
     return node;
 }
 
 Node *mk_cons(Node *e1, Node *e2) {
- Node *node = heap_alloc(sizeof(Node), alignof(Node));
+    stack_push(e1);
+    stack_push(e2);
+    Node *node = heap_alloc(sizeof(Node), alignof(Node));
     node->tag = NODE_CONS;
-    node->e1 = e1;
-    node->e2 = e2;
+    // node->e1 = e1;
+    // node->e2 = e2;
+    node->e2 = stack_pop();
+    node->e1 = stack_pop();
 
     return node;
 }
 
 void mk_ind(Node *replace, Node *old) {
+    // printf("Old Tag:\n");
+    // util_print_tag(old);
+    // printf("Replace Tag:\n");
+    // util_print_tag(replace);å
+
     old->tag = NODE_IND;
     old->result = replace;
 }
@@ -258,15 +269,17 @@ Node *stack_pop() {
     return stack[sp];
 }
 
-Node *stack_peak() {
-    return stack[sp-1];
+Node *stack_peak(int n) {
+    return stack[sp-n-1];
 }
 
 Node *eval_I() {
+    // util_print_tag(stack_peak(0));
     return stack_pop();
 }
 
 Node *eval_K() {
+    // util_print_stack();
     Node *ret = stack_pop();
     stack_pop();
 
@@ -277,11 +290,19 @@ Node *eval_S() {
     Node *f = stack_pop();
     Node *g = stack_pop();
     Node *x = stack_pop();
+    stack_push(x);
+    stack_push(f);
 
     Node *g_x = mk_app(g, x);
+    f = stack_pop();
+    x = stack_pop();
+    stack_push(g_x);
     Node *f_x = mk_app(f, x);
 
-    return mk_app(f_x, g_x);
+    // return mk_app(f_x, g_x);
+    Node *ret = mk_app(f_x, stack_pop());
+    
+    return ret;
 }
 
 Node *eval_add() {
@@ -403,17 +424,22 @@ Node *eval_unpack() {
 
 Node *eval_Y() {
     Node *f = stack_pop();
+    stack_push(f);
 
     // placeholder node
     Node *hole = mk_empty();
 
-    Node *ret = mk_app(f, hole);
-    mk_ind(ret, hole);
+    // Node *ret = mk_app(f, hole);
+    Node *ret = mk_app(stack_pop(), hole);
+
+    // hole = stack_pop();
+    mk_ind(ret, hole); 
 
     return ret;
 }
 
 Node *app_global(Node *global) {
+    // printf("APP: %s\n", global->g_name);
     return unwind(global->code());
 }
 
@@ -424,7 +450,7 @@ Node *app_constr(Node *constr) {
 Node *unwind(Node *node) {
     if (debug_enabled == true) {
         printf("UNWIND NODE:\n");
-        util_print_node(node);
+        util_print_tag(node);
         printf("\n");
         printf("WITH STACK:\n");
         util_print_stack();
@@ -457,10 +483,12 @@ Node *unwind(Node *node) {
             //     util_print_node(node->arg);
             // }
             stack_push(node->arg);
+            // util_print_tag(node->fn);
             return unwind(node->fn);
 
         case NODE_GLOBAL:
             if (sp >= node->g_arity) {
+                // printf("APP GLOBAL: %s\n", node->g_name);
                 return app_global(node);
             }
             else {
@@ -478,6 +506,8 @@ Node *unwind(Node *node) {
 
         case FORWARDED:
             printf("Trying to unwind forwarded node\n");
+            util_print_stack();
+            util_print_tag(node->forwarded);
             exit(-1);
     }
 }
