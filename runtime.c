@@ -3,7 +3,8 @@
 
 Bool debug_enabled = false;
 
-#define HEAP_SIZE (4 * 1024 * 1024)   // 4 MB per semi-space
+// #define HEAP_SIZE (4 * 1024 * 1024)   // 4 MB per semi-space
+#define HEAP_SIZE (4 * 1024 * 10)   // 4 MB per semi-space
 #define STACK_SIZE (128 * 1024)       // 128K entries ~ 1 MB
 
 // initialize the heap and heap pointer
@@ -22,14 +23,13 @@ Node *stack[STACK_SIZE];
 int sp = 0;
 
 
-Node *reg[1];
-
 // program graph constructed by the compiler
 extern void entry();
 
 
 void collect_garbage() {
     printf("COLLECTING\n");
+    // printf("HP: %zu\n", hp / sizeof(Node));
     // util_print_stack();
     // reset to_space heap pointer
     to_hp = 0;
@@ -38,8 +38,6 @@ void collect_garbage() {
     for (int i = 0; i < sp; i++) {
         stack[i] = copy_to_space(stack[i]);
     }
-
-    reg[0] = copy_to_space(reg[0]);
 
     // scan to_space for references
     size_t scan = 0;
@@ -65,6 +63,7 @@ void collect_garbage() {
     // move heap pointer to new heap
     hp = to_hp;
     printf("DONE\n");
+    // printf("HP: %zu\n", hp / sizeof(Node));
     // util_print_stack();
 }
 
@@ -110,6 +109,7 @@ Node *copy_to_space(Node *node) {
 
     Node *new_node = to_alloc(size, alignof(Node));
     memcpy(new_node, node, size);
+    // fprintf(stderr,"COPY: %d\n", new_node->tag);
 
     node->tag = FORWARDED;
     node->forwarded = new_node;
@@ -153,7 +153,9 @@ void *heap_alloc(size_t size, size_t align) {
 }
 
 Node *mk_int(int64_t val) {
+    // printf("MAKING A MF INT\n");
     Node *node = heap_alloc(sizeof(Node), alignof(Node));
+    // printf("INT ALLOC DONE\n");
     node->tag = NODE_INT;
     node->val = val;
 
@@ -306,8 +308,15 @@ Node *eval_S() {
 }
 
 Node *eval_add() {
+    // printf("ADD\n");
     Node *int1 = unwind(stack_pop());
-    Node *int2 = unwind(stack_pop());
+    Node *i2 = stack_pop();
+    stack_push(int1);
+    // printf("INT1\n");
+    // Node *int2 = unwind(stack_pop());
+    Node *int2 = unwind(i2);
+    // printf("INT2\n");
+    int1 = stack_pop();
 
     int64_t new_val = int1->val + int2->val;
     Node *node = mk_int(new_val);
@@ -328,6 +337,7 @@ Node *eval_eq() {
         return mk_bool(false);
     }
     else if (tag1 == NODE_INT && tag2 == NODE_INT) {
+        // printf("%lld == %lld\n", val1->val, val2->val);
         if (val1->val == val2->val) {return mk_bool(true);} else {return mk_bool(false);}
     } 
     else if (tag1 == NODE_BOOL && tag2 == NODE_BOOL) {
@@ -340,7 +350,9 @@ Node *eval_eq() {
         return mk_bool(false);
     }
     else {
-        return mk_empty();  // probably should be error, should never get here with type checking
+        // return mk_empty();  // probably should be error, should never get here with type checking
+        printf("YOU DONE FUCKED UP\n");
+        exit(-1);
     }
 }
 
@@ -506,8 +518,9 @@ Node *unwind(Node *node) {
 
         case FORWARDED:
             printf("Trying to unwind forwarded node\n");
-            util_print_stack();
-            util_print_tag(node->forwarded);
+            // util_print_stack();
+            // util_print_tag(node->forwarded);
+            // printf("HP: %zu\n", hp / sizeof(Node));
             exit(-1);
     }
 }
