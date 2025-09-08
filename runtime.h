@@ -32,7 +32,7 @@ typedef struct Node {
     union {
         int64_t val;                            // NODE_INT
         Bool cond;                              // NODE_BOOL
-        struct Node *forwarded;                        // FORWARDED
+        struct Node *forwarded;                 // FORWARDED
         struct {                                // NODE_APP
             struct Node *fn;
             struct Node *arg;

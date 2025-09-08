@@ -1,1 +1,8 @@
-defrec inf_list n = Cons (n, inf_list (n + 1)) in inf_list 0
+type pair = Pair of int * pair in
+defrec inf_list n = 
+    if n == 14 then
+        n
+    else
+        Pair (n, (inf_list (n + 1)))
+in
+inf_list 0

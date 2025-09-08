@@ -1,10 +1,11 @@
 #include "runtime.h"
 #include "utils.h"
+#include <assert.h>
 
 Bool debug_enabled = false;
 
-// #define HEAP_SIZE (4 * 1024 * 1024)   // 4 MB per semi-space
-#define HEAP_SIZE (4 * 1024 * 10)   // 4 MB per semi-space
+#define HEAP_SIZE (4 * 1024 * 1024)   // 4 MB per semi-space
+// #define HEAP_SIZE (4 * 1024 * 10)   // mini heap for testing
 #define STACK_SIZE (128 * 1024)       // 128K entries ~ 1 MB
 
 // initialize the heap and heap pointer
@@ -17,7 +18,6 @@ uint8_t *to_space = heap2;
 size_t hp = 0; // offset into from_space
 size_t to_hp = 0; // offset into to_space
 
-// TODO -- detect stack overflow
 // initialize the stack and stack pointer
 Node *stack[STACK_SIZE];
 int sp = 0;
@@ -26,12 +26,11 @@ int sp = 0;
 // program graph constructed by the compiler
 extern void entry();
 
+int num_collections = 0;
 
 void collect_garbage() {
-    printf("COLLECTING\n");
-    // printf("HP: %zu\n", hp / sizeof(Node));
-    // util_print_stack();
     // reset to_space heap pointer
+    num_collections++;
     to_hp = 0;
 
     // copy root nodes on stack to to_space
@@ -45,7 +44,6 @@ void collect_garbage() {
     while (scan < to_hp) {
         Node *node = (Node *)(to_space + scan);
         copy_refs_to_space(node);
-        // scan += sizeof(Node);
         if (node->tag == NODE_STRUCT) {
             size = sizeof(Node) + node->s_arity * sizeof(Node *);
         } 
@@ -62,9 +60,6 @@ void collect_garbage() {
 
     // move heap pointer to new heap
     hp = to_hp;
-    printf("DONE\n");
-    // printf("HP: %zu\n", hp / sizeof(Node));
-    // util_print_stack();
 }
 
 void copy_refs_to_space(Node *node) {
@@ -109,7 +104,6 @@ Node *copy_to_space(Node *node) {
 
     Node *new_node = to_alloc(size, alignof(Node));
     memcpy(new_node, node, size);
-    // fprintf(stderr,"COPY: %d\n", new_node->tag);
 
     node->tag = FORWARDED;
     node->forwarded = new_node;
@@ -124,6 +118,12 @@ void *alloc(uint8_t *space, size_t *hp, size_t size, size_t align) {
         *hp += align - misalign;
     }
 
+    // just in case
+    if (*hp + size > HEAP_SIZE) {
+        printf("Out of memory (alloc)\n");
+        exit(-1);
+    }
+
     void *ptr = &space[*hp];
     *hp += size;
 
@@ -132,7 +132,7 @@ void *alloc(uint8_t *space, size_t *hp, size_t size, size_t align) {
 
 void *to_alloc(size_t size, size_t align) {
     if (to_hp + size > HEAP_SIZE) {
-        printf("Out of memory\n");
+        printf("Out of memory (to_alloc)\n");
         exit(-1);
     }
 
@@ -144,7 +144,7 @@ void *heap_alloc(size_t size, size_t align) {
         collect_garbage();
 
         if (hp + size > HEAP_SIZE) {
-            printf("Out of memory\n");
+            printf("Out of memory (heap_alloc)\n");
             exit(-1);
         }
     }
@@ -153,9 +153,8 @@ void *heap_alloc(size_t size, size_t align) {
 }
 
 Node *mk_int(int64_t val) {
-    // printf("MAKING A MF INT\n");
     Node *node = heap_alloc(sizeof(Node), alignof(Node));
-    // printf("INT ALLOC DONE\n");
+
     node->tag = NODE_INT;
     node->val = val;
 
@@ -164,6 +163,7 @@ Node *mk_int(int64_t val) {
 
 Node *mk_bool(Bool cond) {
     Node *node = heap_alloc(sizeof(Node), alignof(Node));
+
     node->tag = NODE_BOOL;
     node->cond = cond;
 
@@ -172,6 +172,7 @@ Node *mk_bool(Bool cond) {
 
 Node *mk_empty() {
     Node *node = heap_alloc(sizeof(Node), alignof(Node));
+
     node->tag = NODE_EMPTY;
 
     return node;
@@ -179,6 +180,7 @@ Node *mk_empty() {
 
 Node *mk_fail() {
     Node *node = heap_alloc(sizeof(Node), alignof(Node));
+
     node->tag = NODE_FAIL;
 
     return node;
@@ -186,6 +188,7 @@ Node *mk_fail() {
 
 Node *mk_global(int64_t arity, Node*(*code)(), char *name) {
     Node *node = heap_alloc(sizeof(Node), alignof(Node));
+
     node->tag = NODE_GLOBAL;
     node->g_arity = arity;
     node->code = code;
@@ -196,6 +199,7 @@ Node *mk_global(int64_t arity, Node*(*code)(), char *name) {
 
 Node *mk_constr(int64_t arity, char *name) {
     Node *node = heap_alloc(sizeof(Node), alignof(Node));
+
     node->tag = NODE_CONSTR;
     node->c_arity = arity;
     node->c_name = name;
@@ -205,6 +209,7 @@ Node *mk_constr(int64_t arity, char *name) {
 
 Node *mk_struct(char *name, int64_t arity) {
     Node *node = heap_alloc(sizeof(Node) + sizeof(Node*) * arity, alignof(Node));
+
     node->tag = NODE_STRUCT;
     node->s_name = name;
     node->s_arity = arity;
@@ -228,10 +233,10 @@ Node *unpack_struct(Node *struc, int64_t n) {
 Node *mk_app(Node *fn, Node *arg) {
     stack_push(fn);
     stack_push(arg);
+
     Node *node = heap_alloc(sizeof(Node), alignof(Node));
+
     node->tag = NODE_APP;
-    // node->fn = fn;
-    // node->arg = arg;
     node->arg = stack_pop();
     node->fn = stack_pop();
 
@@ -241,10 +246,10 @@ Node *mk_app(Node *fn, Node *arg) {
 Node *mk_cons(Node *e1, Node *e2) {
     stack_push(e1);
     stack_push(e2);
+
     Node *node = heap_alloc(sizeof(Node), alignof(Node));
+
     node->tag = NODE_CONS;
-    // node->e1 = e1;
-    // node->e2 = e2;
     node->e2 = stack_pop();
     node->e1 = stack_pop();
 
@@ -252,16 +257,15 @@ Node *mk_cons(Node *e1, Node *e2) {
 }
 
 void mk_ind(Node *replace, Node *old) {
-    // printf("Old Tag:\n");
-    // util_print_tag(old);
-    // printf("Replace Tag:\n");
-    // util_print_tag(replace);å
-
     old->tag = NODE_IND;
     old->result = replace;
 }
 
 void stack_push(Node *node) {
+    if (sp >= STACK_SIZE) {
+        printf("Stack overflow\n");
+        exit(-1);
+    }
     stack[sp] = node;
     sp++;
 }
@@ -276,12 +280,10 @@ Node *stack_peak(int n) {
 }
 
 Node *eval_I() {
-    // util_print_tag(stack_peak(0));
     return stack_pop();
 }
 
 Node *eval_K() {
-    // util_print_stack();
     Node *ret = stack_pop();
     stack_pop();
 
@@ -292,30 +294,28 @@ Node *eval_S() {
     Node *f = stack_pop();
     Node *g = stack_pop();
     Node *x = stack_pop();
+
     stack_push(x);
     stack_push(f);
 
     Node *g_x = mk_app(g, x);
+
     f = stack_pop();
     x = stack_pop();
     stack_push(g_x);
+
     Node *f_x = mk_app(f, x);
 
-    // return mk_app(f_x, g_x);
     Node *ret = mk_app(f_x, stack_pop());
     
     return ret;
 }
 
 Node *eval_add() {
-    // printf("ADD\n");
     Node *int1 = unwind(stack_pop());
     Node *i2 = stack_pop();
     stack_push(int1);
-    // printf("INT1\n");
-    // Node *int2 = unwind(stack_pop());
     Node *int2 = unwind(i2);
-    // printf("INT2\n");
     int1 = stack_pop();
 
     int64_t new_val = int1->val + int2->val;
@@ -337,7 +337,6 @@ Node *eval_eq() {
         return mk_bool(false);
     }
     else if (tag1 == NODE_INT && tag2 == NODE_INT) {
-        // printf("%lld == %lld\n", val1->val, val2->val);
         if (val1->val == val2->val) {return mk_bool(true);} else {return mk_bool(false);}
     } 
     else if (tag1 == NODE_BOOL && tag2 == NODE_BOOL) {
@@ -350,8 +349,7 @@ Node *eval_eq() {
         return mk_bool(false);
     }
     else {
-        // return mk_empty();  // probably should be error, should never get here with type checking
-        printf("YOU DONE FUCKED UP\n");
+        printf("Trying to compare equality (==) of two different types or something\n");
         exit(-1);
     }
 }
@@ -375,6 +373,7 @@ Node *eval_isint() {
 }
 
 Node *eval_isconstr() {
+    // printf("EVAL_ISCONSTR\n");
     Node *exp = unwind(stack_pop());
     Node *constr = stack_pop(); // should NOT unwind, TODO -- better way to do comparison in IsConstr?
 
@@ -421,15 +420,11 @@ Node *eval_tail() {
 
 Node *eval_unpack() {
     Node *struc = unwind(stack_pop());
-    Node *idx = unwind(stack_pop());
+    Node *i = stack_pop();
+    stack_push(struc);
+    Node *idx = unwind(i);
 
-    // if (debug_enabled == true) {
-    //     printf("Unpacking: ");
-    //     util_print_node(struc);
-    //     printf(" at idx: ");
-    //     util_print_node(idx);
-    //     printf("\n");
-    // }
+    struc = stack_pop();
 
     return unpack_struct(struc, idx->val);
 }
@@ -441,17 +436,17 @@ Node *eval_Y() {
     // placeholder node
     Node *hole = mk_empty();
 
-    // Node *ret = mk_app(f, hole);
-    Node *ret = mk_app(stack_pop(), hole);
+    f = stack_pop();
+    stack_push(hole);
+    Node *ret = mk_app(f, hole);
 
-    // hole = stack_pop();
-    mk_ind(ret, hole); 
+    hole = stack_pop();
+    mk_ind(ret, hole);
 
     return ret;
 }
 
 Node *app_global(Node *global) {
-    // printf("APP: %s\n", global->g_name);
     return unwind(global->code());
 }
 
@@ -490,17 +485,11 @@ Node *unwind(Node *node) {
             return unwind(node->result);
 
         case NODE_APP:
-            // if (debug_enabled == true) {
-            //     printf("PUSHING:\n");
-            //     util_print_node(node->arg);
-            // }
             stack_push(node->arg);
-            // util_print_tag(node->fn);
             return unwind(node->fn);
 
         case NODE_GLOBAL:
             if (sp >= node->g_arity) {
-                // printf("APP GLOBAL: %s\n", node->g_name);
                 return app_global(node);
             }
             else {
@@ -518,9 +507,6 @@ Node *unwind(Node *node) {
 
         case FORWARDED:
             printf("Trying to unwind forwarded node\n");
-            // util_print_stack();
-            // util_print_tag(node->forwarded);
-            // printf("HP: %zu\n", hp / sizeof(Node));
             exit(-1);
     }
 }
@@ -556,34 +542,41 @@ void print_node(Node *node) {
         printf("Fail");
     }
     else if (node->tag == NODE_CONS) {
-        printf("CONS (");
-        stack_push(node->e1);
-        print_node(reduce());
-        printf(", ");
         stack_push(node->e2);
-        print_node(reduce());
+        stack_push(node->e1);
+
+        Node *e1 = reduce();  // pops e1
+        Node *e2 = reduce();  // pops e2
+
+        printf("Cons (");
+        print_node(e1);
+        printf(", ");
+        print_node(e2);
         printf(")");
     }
     else if (node->tag == NODE_IND) {
         print_node(node->result);
     }
     else if (node->tag == NODE_STRUCT) {
-        int64_t arity, i;
-        arity = node->s_arity;
+        int64_t arity = node->s_arity;
         printf("%s (", node->s_name);
-        for (i = 0; i < arity; i++) {
-            Node *elt = unpack_struct(node, i);
-            stack_push(elt);
-            print_node(reduce());
-            if (i + 1 < arity) {
-                printf(", ");
-            }
+
+        // push all fields onto the stack to make visible to gc
+        // in reverse order so reduce() returns them in natural order
+        for (int64_t i = arity - 1; i >= 0; i--) {
+            stack_push(node->fields[i]);
+        }
+
+        for (int64_t i = 0; i < arity; i++) {
+            Node *elt = reduce();
+            print_node(elt);
+            if (i + 1 < arity) printf(", ");
         }
         printf(")");
     }
     else {
         printf("Error: Result is not a value:\n");
-        util_print_node(node);
+        exit(-1);
     }
 }
 
@@ -598,12 +591,11 @@ int main(int argc, char **argv)
 
     entry();
 
-    // if (debug_enabled == true) {
-    //     printf("INITIAL STACK:\n");
-    //     util_print_stack();
-    // }
-
     print_node(reduce());
     printf("\n");
+
+    if (debug_enabled == true)
+        printf("collections: %d\n", num_collections);
+
     return 0;
 }
