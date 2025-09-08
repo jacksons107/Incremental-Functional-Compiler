@@ -41,8 +41,8 @@ rule read =
     | "with" {WITH}
     | "|" {BAR}
     | "->" {ARROW}
-    | "=" {BIND}
     | "==" {EQ}
+    | "=" {BIND}
     | "in" {IN}
     | "Cons" {CONS}
     | "head" {HEAD}

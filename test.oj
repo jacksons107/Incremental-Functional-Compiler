@@ -1,4 +1,10 @@
-def f x = x + 1;
-def g y = y + 2;
-let z = 3;
-f (g z)
+type test = Test of int * int * int;
+let t = (let a = Test (1, 2, 3) in a);
+match t with
+    | []             -> []
+    | Test (x, y, z) -> (
+        match y with
+            | 1 -> 0
+            | 2 -> (let w = z in w + x)
+            | 3 -> 69
+    )

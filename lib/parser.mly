@@ -36,16 +36,12 @@ open Ast
 %token EOF
 
 %left PLUS
-%left EQ
 
 
 %start <Ast.prog> prog
 
 %%
 
-
-// prog:
-//     | e = exp; EOF {e}
 
 prog:
     | ds = list(def); e = exp; EOF {Prog (ds, e)}
@@ -54,24 +50,32 @@ def:
     | LET; v = VAR; BIND; b = exp; SEMI {DLet (v, b)}
     | DEF; n = VAR; v = list(VAR); BIND; e = exp; SEMI {DDef (n, v, e)}
     | DEFREC; n = VAR; v = list(VAR); BIND; e = exp; SEMI {DDefrec (n, v, e)}
+    | TYPE; n = VAR; BIND; c = CONSTR; OF; a = separated_list(STAR, VAR); SEMI {DType (n, c, a)}
 
+local_def:
+    | LET; v = VAR; BIND; b = nonmatch_exp; IN; e = nonmatch_exp {Let (v, b, e)}
+    | DEF; n = VAR; v = list(VAR); BIND; e = nonmatch_exp; IN; r = nonmatch_exp {Def (n, v, e, r)}
+    | DEFREC; n = VAR; v = list(VAR); BIND; e = nonmatch_exp; IN; r = nonmatch_exp {Defrec (n, v, e, r)}
 
 exp:
-    | LET; v = VAR; BIND; b = exp; IN; e = exp {Let (v, b, e)}
-    | DEF; n = VAR; v = list(VAR); BIND; e = exp; IN; r = exp {Def (n, v, e, r)}
-    | DEFREC; n = VAR; v = list(VAR); BIND; e = exp; IN; r = exp {Defrec (n, v, e, r)}
-    | TYPE; n = VAR; BIND; c = CONSTR; OF; a = separated_list(STAR, VAR); IN; r = exp {Type (n, c, a, r)}
-    | MATCH; scrut = exp; WITH; cases = match_cases {Match ([scrut], cases)}
-    | IF; b = exp; THEN; e1 = exp; ELSE; e2 = exp {If (b, e1, e2)}
+    | n = nonmatch_exp {n}
+    | m = match_exp {m}
+
+nonmatch_exp:
+    // | TYPE; n = VAR; BIND; c = CONSTR; OF; a = separated_list(STAR, VAR); IN; r = nonmatch_exp {Type (n, c, a, r)}
+    | LPAREN; m = match_exp; RPAREN {m}
+    | IF; b = nonmatch_exp; THEN; e1 = nonmatch_exp; ELSE; e2 = nonmatch_exp {If (b, e1, e2)}
+    | LPAREN; l = local_def; RPAREN {l}
     | e = bool_exp {e}
 
-match_cases:
-    | c = match_case {[c]}
-    | c = match_case; BAR; cs = match_cases {c::cs}
+match_exp:
+    | MATCH; scrut = nonmatch_exp; WITH; cases = match_cases {Match ([scrut], cases)}
 
+match_cases:
+    | BAR; cs = separated_nonempty_list(BAR, match_case) {cs}
 
 match_case:
-    | p = pat; ARROW; e = exp {([p], e)}
+    | p = pat; ARROW; e = nonmatch_exp {([p], e)}
 
 pat:
     | i = INT {PInt i}
@@ -82,7 +86,7 @@ pat:
     | EMPTY {PEmpty}
 
 bool_exp:
-    | e1 = bool_exp; EQ; e2 = bool_exp {Eq (e1, e2)}
+    | e1 = math_exp; EQ; e2 = math_exp {Eq (e1, e2)}
     | e = math_exp {e}
 
 math_exp:
@@ -91,9 +95,9 @@ math_exp:
 
 // TODO -- change outer CONS to infix ::
 app_exp:
-    | CONS; LPAREN; e1 = exp; COMMA; e2 = exp; RPAREN {Cons (e1, e2)}
-    | CONS; LPAREN; e = exp; RPAREN {Cons (e, Empty)}   // get rid of this?
-    | c = CONSTR; LPAREN; a = separated_list(COMMA, exp); RPAREN {Pack (c, a)}
+    | CONS; LPAREN; e1 = nonmatch_exp; COMMA; e2 = nonmatch_exp; RPAREN {Cons (e1, e2)}
+    | CONS; LPAREN; e = nonmatch_exp; RPAREN {Cons (e, Empty)}   // get rid of this?
+    | c = CONSTR; LPAREN; a = separated_list(COMMA, nonmatch_exp); RPAREN {Pack (c, a)}
     | HEAD; c = atom {Head c}
     | TAIL; c = atom {Tail c}
     | f = app_exp; arg = atom {App (f, arg)}
@@ -105,4 +109,4 @@ atom:
     | v = VAR {Var v}
     | EMPTY {Empty}
     | LBRACK; d = separated_list(COMMA, atom); RBRACK {List d}
-    | LPAREN; e = exp; RPAREN {e}
+    | LPAREN; e = nonmatch_exp; RPAREN {e}
