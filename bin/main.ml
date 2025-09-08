@@ -1,3 +1,4 @@
+open Def_to_exp
 open Ast_to_elam
 open Elam_to_lam
 open Lam_to_comb
@@ -28,7 +29,7 @@ let parse filename s =
 
 let compile filename exp =
   run_j_machine
-    (comb_to_j (lam_to_comb (elam_to_lam (ast_to_elam (parse filename exp)))))
+    (comb_to_j (lam_to_comb (elam_to_lam (ast_to_elam (def_to_exp (parse filename exp))))))
 
 let () =
   if Array.length Sys.argv <> 2 then (

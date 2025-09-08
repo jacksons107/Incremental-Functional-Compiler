@@ -6,6 +6,7 @@ open Ast
 %token <int> INT 
 %token <bool> BOOL
 %token <string> CONSTR
+%token SEMI
 %token CONS
 %token HEAD
 %token TAIL
@@ -38,13 +39,22 @@ open Ast
 %left EQ
 
 
-%start <Ast.exp> prog
+%start <Ast.prog> prog
 
 %%
 
 
+// prog:
+//     | e = exp; EOF {e}
+
 prog:
-    | e = exp; EOF {e}
+    | ds = list(def); e = exp; EOF {Prog (ds, e)}
+
+def:
+    | LET; v = VAR; BIND; b = exp; SEMI {DLet (v, b)}
+    | DEF; n = VAR; v = list(VAR); BIND; e = exp; SEMI {DDef (n, v, e)}
+    | DEFREC; n = VAR; v = list(VAR); BIND; e = exp; SEMI {DDefrec (n, v, e)}
+
 
 exp:
     | LET; v = VAR; BIND; b = exp; IN; e = exp {Let (v, b, e)}

@@ -21,6 +21,7 @@ rule read =
     parse
     | white {read lexbuf}
     | "\n" {incr_linenum lexbuf; read lexbuf}
+    | ";" {SEMI}
     | "+" {PLUS}
     | "*" {STAR}
     | "if" {IF}

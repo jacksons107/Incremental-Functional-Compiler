@@ -1,5 +1,6 @@
 open Elam
 open Ast_to_elam
+open Def_to_exp
 
 let parse s =
     let lexbuf = Lexing.from_string s in
@@ -29,11 +30,9 @@ let rec pp_elam elam_exp = match elam_exp with
     | ELam (v, b) -> "(lambda (" ^ v ^ ") (" ^ pp_elam b ^ "))"
     | ELet (v, b, e) -> "(let " ^ v ^ " = " ^ pp_elam b ^ " in " ^ pp_elam e ^ ")"
 
-let exp = "type test = Test of int * cons * int in
-            type result = Res of int * int * int * int in
-            let t = Test (1, Cons (2, 3), 4) in
-            match t with
-                Test (w, (8, y), z)  -> 420
-                | Test (w, (x, 3), z)  -> Res (z, 69, x, w)"
+let exp = "defrec inf_list n = 
+                Cons (n, inf_list (n + 1))
+            in
+            inf_list 0"
 
-let () = print_endline (pp_elam (ast_to_elam (parse exp)))
+let () = print_endline (pp_elam (ast_to_elam (def_to_exp (parse exp))))

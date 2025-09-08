@@ -31,3 +31,10 @@ type exp =
     | Tail of exp
     | Empty
     | Fail
+
+type def =
+    | DLet of string * exp
+    | DDef of string * string list * exp
+    | DDefrec of string * string list * exp
+
+type prog = Prog of def list * exp

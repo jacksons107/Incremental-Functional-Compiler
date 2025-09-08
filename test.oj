@@ -1,8 +1,4 @@
-type pair = Pair of int * pair in
-defrec inf_list n = 
-    if n == 14 then
-        n
-    else
-        Pair (n, (inf_list (n + 1)))
-in
-inf_list 0
+def f x = x + 1;
+def g y = y + 2;
+let z = 3;
+f (g z)

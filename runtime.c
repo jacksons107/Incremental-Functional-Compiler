@@ -28,6 +28,7 @@ extern void entry();
 
 int num_collections = 0;
 
+// TODO -- redesign gc visibility
 void collect_garbage() {
     // reset to_space heap pointer
     num_collections++;
