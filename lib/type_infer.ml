@@ -59,6 +59,7 @@ let lookup env x =
 let rec infer expr env = match expr with
     | EInt _  -> TInt
     | EBool _ -> TBool
+    | EFail   -> fresh_var ()
     | EVar x  -> lookup env x
     | EPlus   -> TLam (TInt, TLam (TInt, TInt))
 
@@ -85,6 +86,15 @@ let rec infer expr env = match expr with
     | ETail ->
         let fresh = fresh_var () in
         TLam (TList fresh, TList fresh)
+
+    | EIsCons
+    | EIsConstr ->
+        let fresh = fresh_var () in 
+        TLam (fresh, TBool) 
+
+    | EY ->
+        let fresh = fresh_var () in
+        TLam (TLam (fresh, fresh), fresh)
 
     | ELam (v, b) ->
         let fresh = fresh_var () in

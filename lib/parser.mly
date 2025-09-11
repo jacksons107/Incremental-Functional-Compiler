@@ -81,7 +81,8 @@ pat:
     | i = INT {PInt i}
     | b = BOOL {PBool b}
     | v = VAR {PVar v}
-    | LPAREN; e1 = pat; COMMA; e2 = pat; RPAREN {PCons (e1, e2)}
+    // | LPAREN; e1 = pat; COMMA; e2 = pat; RPAREN {PCons (e1, e2)}
+    | LPAREN; e1 = pat; COMMA; e2 = pat; RPAREN {PCons (e1, PCons (e2, PEmpty))}
     | c = CONSTR; LPAREN; a = separated_list(COMMA, pat); RPAREN {PConstr (c, a)}
     | EMPTY {PEmpty}
 
