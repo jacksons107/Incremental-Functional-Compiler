@@ -4,6 +4,7 @@ type typ =
     | TInt
     | TBool
     | TLam of typ * typ
+    | TList of typ
     | TVar of tyvar ref
 
 and tyvar = 
@@ -35,6 +36,9 @@ let rec unify t1 t2 =
             unify v1 v2;
             unify b1 b2
 
+        | TList t1, TList t2 ->
+            unify t1 t2
+
         | TVar ({contents = Unbound id1}), 
           TVar ({contents = Unbound id2}) when id1 = id2 -> ()
         
@@ -57,12 +61,30 @@ let rec infer expr env = match expr with
     | EBool _ -> TBool
     | EVar x  -> lookup env x
     | EPlus   -> TLam (TInt, TLam (TInt, TInt))
-    | EIf     -> 
+
+    | EIf -> 
         let fresh = fresh_var () in
         TLam (TBool, TLam (fresh, TLam (fresh, fresh)))
-    | EEq     -> 
+
+    | EEq -> 
         let fresh = fresh_var () in
         TLam (fresh, TLam (fresh, TBool))
+
+    | ECons ->
+        let fresh = fresh_var () in
+        TLam (fresh, TLam (TList fresh, TList fresh))
+
+    | EEmpty ->
+        let fresh = fresh_var () in
+        TList fresh
+
+    | EHead  ->
+        let fresh = fresh_var () in
+        TLam (TList fresh, fresh)
+
+    | ETail ->
+        let fresh = fresh_var () in
+        TLam (TList fresh, TList fresh)
 
     | ELam (v, b) ->
         let fresh = fresh_var () in

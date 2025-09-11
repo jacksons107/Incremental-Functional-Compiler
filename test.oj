@@ -1,6 +1,1 @@
-def is69 n = 
-    if n == 69 then 
-        True
-    else
-        420;
-is69 69
+tail [1, 2, 3, 4]
