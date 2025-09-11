@@ -11,9 +11,7 @@ type lam_exp =
     | LEmpty
     | LConstr of string * int
     | LUnpack
-    | LIsEmpty
     | LIsCons
-    | LIsInt
     | LIsConstr
     | LFail
     | LY

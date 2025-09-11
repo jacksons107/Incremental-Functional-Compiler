@@ -1,6 +1,6 @@
 type code_ptr =
     | ADD
-    | EQ | ISEMPTY | ISCONS | ISINT | ISCONSTR
+    | EQ | ISCONS | ISCONSTR
     | IF
     | CONS | HEAD | TAIL
     | UNPACK
@@ -19,9 +19,7 @@ type j_instr =
 let builtin_fn name = match name with
     | ADD      -> "eval_add"
     | EQ       -> "eval_eq"
-    | ISEMPTY  -> "eval_isempty"
     | ISCONS   -> "eval_iscons"
-    | ISINT    -> "eval_isint"
     | ISCONSTR -> "eval_isconstr"
     | IF       -> "eval_if"
     | CONS     -> "eval_cons"
@@ -36,9 +34,7 @@ let builtin_fn name = match name with
 let builtin_name name = match name with
     | ADD      -> "\"ADD\""
     | EQ       -> "\"EQ\""
-    | ISEMPTY  -> "\"ISEMPTY\""
     | ISCONS   -> "\"ISCONS\""
-    | ISINT    -> "\"ISINT\""
     | ISCONSTR -> "\"ISCONSTR\""
     | IF       -> "\"IF\""
     | CONS     -> "\"CONS\""

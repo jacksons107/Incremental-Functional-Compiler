@@ -11,9 +11,7 @@ type exp =
     | Int of int
     | Bool of bool
     | Eq of exp * exp
-    | IsEmpty of exp
     | IsCons of exp
-    | IsInt of exp
     | IsConstr of exp * string
     | Plus of exp * exp
     | App of exp * exp

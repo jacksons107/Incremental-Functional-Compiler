@@ -15,9 +15,7 @@ let rec elam_to_lam expr = match expr with
     | EEmpty           -> LEmpty
     | EConstr (c, a)   -> LConstr (c, a)
     | EUnpack          -> LUnpack
-    | EIsEmpty         -> LIsEmpty
     | EIsCons          -> LIsCons
-    | EIsInt           -> LIsInt
     | EIsConstr        -> LIsConstr
     | EFail            -> LFail
     | EApp (e1, e2)    -> LApp (elam_to_lam e1, elam_to_lam e2)

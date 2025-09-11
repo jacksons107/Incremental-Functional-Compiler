@@ -147,14 +147,8 @@ Node *eval_add();
    temporarily returns [] in the case of malformed expression */
 Node *eval_eq();
 
-/* pop one node off the stack, return if it is an empty node or not (bool node) */
-Node *eval_isempty();
-
 /* pop one node off the stack, return if it is a cons node or not (bool node) */
 Node *eval_iscons();
-
-/* pop one node off the stack, return if it is an int node or not (bool node) */
-Node *eval_isint();
 
 /* pop one node off the stack, return if it is a given constr node or not (bool node) */
 Node *eval_isconstr();

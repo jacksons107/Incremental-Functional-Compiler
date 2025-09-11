@@ -5,8 +5,8 @@ let rec abstract var exp = match exp with
     | CVar y when var = y -> I
     | CVar _ 
     | I | K | S
-    | CEq | CIsEmpty 
-    | CIsCons | CIsInt
+    | CEq
+    | CIsCons
     | CIsConstr
     | CIf
     | CCons | CEmpty
@@ -31,9 +31,7 @@ let rec lam_to_comb exp = match exp with
     | LEmpty          -> CEmpty
     | LConstr (c, a)  -> CConstr (c, a)
     | LUnpack         -> CUnpack
-    | LIsEmpty        -> CIsEmpty
     | LIsCons         -> CIsCons
-    | LIsInt          -> CIsInt
     | LIsConstr       -> CIsConstr
     | LFail           -> CFail
     | LY              -> CY

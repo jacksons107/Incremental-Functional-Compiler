@@ -17,9 +17,7 @@ let rec ast_to_elam ast = match ast with
     | Empty                           -> EEmpty
     | App (e1, e2)                    -> EApp (ast_to_elam e1, ast_to_elam e2)
     | Eq (e1, e2)                     -> EApp (EApp (EEq, ast_to_elam e1), ast_to_elam e2)
-    | IsEmpty e                       -> EApp (EIsEmpty, ast_to_elam e)
     | IsCons e                        -> EApp (EIsCons, ast_to_elam e)
-    | IsInt e                         -> EApp (EIsInt, ast_to_elam e)
     | IsConstr (e, name)              -> EApp (EApp (EIsConstr, ast_to_elam e), EConstr (name, -1))
     | Plus (e1, e2)                   -> EApp (EApp (EPlus, ast_to_elam e1), ast_to_elam e2)
     | If (b, e1, e2)                  -> EApp (EApp (EApp (EIf, ast_to_elam b), ast_to_elam e1), ast_to_elam e2)

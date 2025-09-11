@@ -355,22 +355,10 @@ Node *eval_eq() {
     }
 }
 
-Node *eval_isempty() {
-    Node *node = unwind(stack_pop());
-
-    if (node->tag == NODE_EMPTY) {return mk_bool(true);} else {return mk_bool(false);}
-}
-
 Node *eval_iscons() {
     Node *node = unwind(stack_pop());
 
     if (node->tag == NODE_CONS) {return mk_bool(true);} else {return mk_bool(false);}
-}
-
-Node *eval_isint() {
-    Node *node = unwind(stack_pop());
-
-    if (node->tag == NODE_INT) {return mk_bool(true);} else {return mk_bool(false);}
 }
 
 Node *eval_isconstr() {

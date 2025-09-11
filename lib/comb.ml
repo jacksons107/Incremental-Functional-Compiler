@@ -11,9 +11,7 @@ type comb_exp =
     | CEmpty
     | CConstr of string * int
     | CUnpack
-    | CIsEmpty
     | CIsCons
-    | CIsInt
     | CIsConstr
     | CFail
     | CY
