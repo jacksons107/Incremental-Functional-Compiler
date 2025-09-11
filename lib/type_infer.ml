@@ -23,6 +23,7 @@ let rec prune tvar = match tvar with
     | TVar ({contents = Link ty}) -> prune ty
     | ty -> ty
 
+(* TODO -- add line number to type check errors *)
 let rec unify t1 t2 = 
     let t1 = prune t1 in
     let t2 = prune t2 in 
@@ -55,6 +56,13 @@ let rec infer expr env = match expr with
     | EInt _  -> TInt
     | EBool _ -> TBool
     | EVar x  -> lookup env x
+    | EPlus   -> TLam (TInt, TLam (TInt, TInt))
+    | EIf     -> 
+        let fresh = fresh_var () in
+        TLam (TBool, TLam (fresh, TLam (fresh, fresh)))
+    | EEq     -> 
+        let fresh = fresh_var () in
+        TLam (fresh, TLam (fresh, TBool))
 
     | ELam (v, b) ->
         let fresh = fresh_var () in

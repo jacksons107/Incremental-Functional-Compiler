@@ -11,9 +11,14 @@ let rec pp_typ ty = match ty with
     | TInt -> "Int"
     | TBool -> "Bool"
     | TLam (t1, t2) -> pp_typ t1 ^ " -> " ^ pp_typ t2
-    (* | TVar _ -> pp_typ (prune ty) *)
-    | TVar _ -> "Var"
+    | TVar _ -> "Var?"
 
-let exp = "(def id x = x in id 5)"
+let exp = "(def is69 n = 
+                if n == 69 then 
+                    n
+                else
+                    420
+            in
+            is69 3)"
 
 let () = print_endline (pp_typ (infer (ast_to_elam (def_to_exp (parse exp))) empty_env))

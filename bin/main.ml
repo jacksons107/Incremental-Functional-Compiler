@@ -1,5 +1,6 @@
 open Def_to_exp
 open Ast_to_elam
+open Type_infer
 open Elam_to_lam
 open Lam_to_comb
 open Comb_to_j
@@ -27,9 +28,15 @@ let parse filename s =
       Printf.eprintf "%a: syntax error\n" print_position lexbuf;
       exit 1
 
-let compile filename exp =
+(* let compile filename exp =
   run_j_machine
-    (comb_to_j (lam_to_comb (elam_to_lam (ast_to_elam (def_to_exp (parse filename exp))))))
+    (comb_to_j (lam_to_comb (elam_to_lam (ast_to_elam (def_to_exp (parse filename exp)))))) *)
+
+let compile filename exp = 
+    let elam = (ast_to_elam (def_to_exp (parse filename exp))) in
+    let _ = infer elam empty_env in
+    run_j_machine
+        (comb_to_j (lam_to_comb (elam_to_lam elam)))
 
 let () =
   if Array.length Sys.argv <> 2 then (

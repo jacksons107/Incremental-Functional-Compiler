@@ -1,1 +1,6 @@
-(def id x = x in id 5)
+def is69 n = 
+    if n == 69 then 
+        True
+    else
+        420;
+is69 69
