@@ -12,6 +12,7 @@ let rec pp_typ ty = match ty with
     | TBool -> "Bool"
     | TLam (t1, t2) -> pp_typ (prune t1) ^ " -> " ^ pp_typ (prune t2)
     | TList t -> pp_typ (prune t) ^ " List"
+    | TConstr c -> c
     | TVar _ -> "Var?"
     (* | TVar _ -> pp_typ (prune ty) *)
 

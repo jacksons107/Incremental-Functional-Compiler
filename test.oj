@@ -1,6 +1,5 @@
-(let test = [69, 420] in
-    (match test with 
-        | (1, 2) -> 1
-        | (3, 4) -> 2
-        | (5, 6) -> 3
-        | (69, 420) -> 420))
+type test = Test of int * int * int;
+type scary = Scary of int * test;
+let t = Test (1, 2, 3);
+let s = Scary (69, t);
+s

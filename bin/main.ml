@@ -28,13 +28,17 @@ let parse filename s =
       Printf.eprintf "%a: syntax error\n" print_position lexbuf;
       exit 1
 
-(* let compile filename exp =
-  run_j_machine
-    (comb_to_j (lam_to_comb (elam_to_lam (ast_to_elam (def_to_exp (parse filename exp)))))) *)
-
 let compile filename exp = 
-    let elam = (ast_to_elam (def_to_exp (parse filename exp))) in
+    (* let elam = (ast_to_elam (def_to_exp (parse filename exp))) in
     let _ = infer elam empty_env in
+    run_j_machine
+        (comb_to_j (lam_to_comb (elam_to_lam elam))) *)
+    let Prog (defs, exp) = parse filename exp in
+    let ast_exp = def_to_exp (Prog (defs, exp)) in
+    let typedefs = get_types defs in
+    let env = setup_env typedefs empty_env in
+    let elam = ast_to_elam ast_exp in
+    let _ = infer elam env in
     run_j_machine
         (comb_to_j (lam_to_comb (elam_to_lam elam)))
 

@@ -36,4 +36,7 @@ type def =
     | DDefrec of string * string list * exp
     | DType of string * string * string list
 
+type typedef = 
+    TypeDef of string * string * string list
+
 type prog = Prog of def list * exp

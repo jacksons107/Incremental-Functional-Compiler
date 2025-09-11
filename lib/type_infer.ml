@@ -1,10 +1,12 @@
 open Elam
+open Ast
 
 type typ = 
     | TInt
     | TBool
     | TLam of typ * typ
     | TList of typ
+    | TConstr of string
     | TVar of tyvar ref
 
 and tyvar = 
@@ -39,6 +41,8 @@ let rec unify t1 t2 =
         | TList t1, TList t2 ->
             unify t1 t2
 
+        | TConstr c1, TConstr c2 when c1 = c2 -> ()
+
         | TVar ({contents = Unbound id1}), 
           TVar ({contents = Unbound id2}) when id1 = id2 -> ()
         
@@ -55,6 +59,25 @@ let empty_env = Env.empty
 let lookup env x = 
     try Env.find x env 
     with Not_found -> raise (Type_error ("Unbound variable: " ^ x))
+
+let rec typedef_helper tname args = match args with
+    | []    -> TConstr tname
+    | x::xs -> TLam (x, typedef_helper tname xs)
+
+(* TODO -- support lists in constructors *)
+let rec args_to_typs args = match args with
+    | [] -> []
+    | x::xs -> match x with
+        | "int" -> TInt::(args_to_typs xs)
+        | "bool" -> TBool::(args_to_typs xs)
+        | _      -> TConstr x::(args_to_typs xs)
+
+let rec setup_env typedefs env = match typedefs with
+    | [] -> env
+    | TypeDef (t, c, a)::xs -> 
+        let new_typ = typedef_helper t (args_to_typs a) in
+        let new_env = Env.add c new_typ env in
+        setup_env xs new_env
 
 let rec infer expr env = match expr with
     | EInt _  -> TInt
@@ -95,6 +118,10 @@ let rec infer expr env = match expr with
     | EY ->
         let fresh = fresh_var () in
         TLam (TLam (fresh, fresh), fresh)
+
+    (* TODO -- prevent multiple types with same constructor *)
+    | EConstr (cname, _) -> 
+        lookup env cname
 
     | ELam (v, b) ->
         let fresh = fresh_var () in
