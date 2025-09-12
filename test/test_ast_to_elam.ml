@@ -12,11 +12,9 @@ let rec pp_elam elam_exp = match elam_exp with
     | EInt n -> string_of_int n
     | EBool b -> string_of_bool b
     | EEq -> "=="
-    | EIsEmpty -> "IsEmpty"
     | EIsCons -> "IsCons"
-    | EIsInt -> "IsInt"
     | EPlus -> "+"
-    | EUnpack -> "Unpack"
+    | EUnpack (n, s, i) -> "Unpack(" ^ n ^ ", " ^ pp_elam s ^ ", " ^ string_of_int i ^ ")"
     | EIsConstr -> "IsConstr"
     | EIf -> "If"
     | EY -> "Y"
@@ -30,6 +28,9 @@ let rec pp_elam elam_exp = match elam_exp with
     | ELam (v, b) -> "(lambda (" ^ v ^ ") (" ^ pp_elam b ^ "))"
     | ELet (v, b, e) -> "(let " ^ v ^ " = " ^ pp_elam b ^ " in " ^ pp_elam e ^ ")"
 
-let exp = "(def id x = x in id 5)"
+let exp = "type pair = Pair of int * int;
+            let test = Pair (69, 420);
+            match test with 
+                | Pair (69, 420) -> 420"
 
 let () = print_endline (pp_elam (ast_to_elam (def_to_exp (parse exp))))

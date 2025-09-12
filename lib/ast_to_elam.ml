@@ -25,11 +25,8 @@ let rec ast_to_elam ast = match ast with
     | Tail c                          -> EApp (ETail, ast_to_elam c)
     | Cons (e1, e2)                   -> EApp (EApp (ECons, ast_to_elam e1), ast_to_elam e2)
     | Type (_, name, args, rest)      -> ELet (name, EConstr (name, List.length args), ast_to_elam rest)
-    (* | Type (tname, cname, args, rest) ->  ELet (cname, 
-                                                EConstr (tname, cname, List.length args, args), 
-                                                ast_to_elam rest) *)
     | Pack (name, args)               -> app_constr (EVar name) (List.rev args)
-    | Unpack (struc, idx)             -> EApp (EApp (EUnpack, ast_to_elam struc), EInt idx)
+    | Unpack (cname, struc, idx)      -> EUnpack (cname, ast_to_elam struc, idx)
     | List d                          -> ast_to_elam (list_to_cons d)
     | Let (var, b, e)                 -> ELet (var, ast_to_elam b, ast_to_elam e)
     | Def (name, vars, body, rest)    -> ELet (name, curry vars (ast_to_elam body), ast_to_elam rest)

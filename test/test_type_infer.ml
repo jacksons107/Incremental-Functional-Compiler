@@ -16,11 +16,9 @@ let rec pp_typ ty = match ty with
     | TVar _ -> "Var?"
     (* | TVar _ -> pp_typ (prune ty) *)
 
-let exp = "(let test = [69, 420] in
-                match test with 
-                    | (1, 2) -> 1
-                    | (3, 4) -> 2
-                    | (5, 6) -> 3
-                    | (69, 420) -> 420)"
+let exp = "type pair = Pair of int * int;
+            let test = Pair (69, 420);
+            match test with 
+                | Pair (69, 420) -> 420"
 
 let () = print_endline (pp_typ (infer (ast_to_elam (def_to_exp (parse exp))) empty_env))

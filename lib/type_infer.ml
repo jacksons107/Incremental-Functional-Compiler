@@ -72,6 +72,14 @@ let rec args_to_typs args = match args with
         | "bool" -> TBool::(args_to_typs xs)
         | _      -> TConstr x::(args_to_typs xs)
 
+let rec unpack_helper s_typ idx =
+    match prune s_typ with
+        | TLam (t, rest) ->
+            if idx = 0 then t
+        else unpack_helper rest (idx - 1)
+        | _ ->
+    raise (Type_error "unpack_helper: index out of range or wrong type")
+
 let rec setup_env typedefs env = match typedefs with
     | [] -> env
     | TypeDef (t, c, a)::xs -> 
@@ -84,7 +92,9 @@ let rec infer expr env = match expr with
     | EBool _ -> TBool
     | EFail   -> fresh_var ()
     | EVar x  -> lookup env x
-    | EPlus   -> TLam (TInt, TLam (TInt, TInt))
+
+    | EPlus   -> 
+        TLam (TInt, TLam (TInt, TInt))
 
     | EIf -> 
         let fresh = fresh_var () in
@@ -110,10 +120,14 @@ let rec infer expr env = match expr with
         let fresh = fresh_var () in
         TLam (TList fresh, TList fresh)
 
-    | EIsCons
-    | EIsConstr ->
+    | EIsCons ->
         let fresh = fresh_var () in 
         TLam (fresh, TBool) 
+
+    | EIsConstr ->
+        let fresh1 = fresh_var () in 
+        let fresh2 = fresh_var () in
+        TLam (fresh1, TLam (fresh2, TBool))
 
     | EY ->
         let fresh = fresh_var () in
@@ -122,6 +136,10 @@ let rec infer expr env = match expr with
     (* TODO -- prevent multiple types with same constructor *)
     | EConstr (cname, _) -> 
         lookup env cname
+
+    | EUnpack (cname, _, idx) ->
+        let constr_typ = lookup env cname in
+        unpack_helper constr_typ idx
 
     | ELam (v, b) ->
         let fresh = fresh_var () in
@@ -139,6 +157,3 @@ let rec infer expr env = match expr with
         let e_typ = infer e env in
         let new_env = Env.add v e_typ env in
         infer b new_env
-
-    | _       -> failwith "Trying to infer unimplemented expression type"
-

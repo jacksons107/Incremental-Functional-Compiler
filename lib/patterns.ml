@@ -88,13 +88,13 @@ let expand_constr scruts m =
         | [] -> failwith "Trying to expand_constr empty scruts list"
         | scrut0 :: rest ->
         (* look at first pattern in the matrix to get arity *)
-        let arity = match get_00 m with
-            | PConstr (_, ps) -> List.length ps
+        let cname, arity = match get_00 m with
+            | PConstr (n, ps) -> n, List.length ps
             | _ -> failwith "expand_constr called but first pattern not a constructor"
         in
         let rec unpack_all i acc =
             if i = arity then List.rev acc
-                else unpack_all (i + 1) (Unpack (scrut0, i) :: acc)
+                else unpack_all (i + 1) (Unpack (cname, scrut0, i) :: acc)
         in
         Scruts (unpack_all 0 [] @ rest)         
 

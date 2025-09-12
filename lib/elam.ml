@@ -11,9 +11,7 @@ type elam_exp =
     | ECons
     | EEmpty
     | EConstr of string * int
-    (* type_name, constr_name, arity, arg type names *)
-    (* | EConstr of string * string * int * string list *)
-    | EUnpack
+    | EUnpack of string * elam_exp * int
     | EIsCons
     | EIsConstr
     | EFail

@@ -1,5 +1,5 @@
-type test = Test of int * int * int;
-type scary = Scary of int * test;
-let t = Test (1, 2, 3);
-let s = Scary (69, t);
-s
+type pair = Pair of int * int;
+let test = Pair (69, 420);
+match test with 
+    | Pair (43, x) -> x
+    | Pair (69, y) -> y

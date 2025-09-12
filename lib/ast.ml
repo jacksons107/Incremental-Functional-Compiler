@@ -23,7 +23,7 @@ type exp =
     | Cons of exp * exp
     | Type of string * string * string list * exp
     | Pack of string * exp list
-    | Unpack of exp * int
+    | Unpack of string * exp * int
     | List of exp list
     | Head of exp
     | Tail of exp
