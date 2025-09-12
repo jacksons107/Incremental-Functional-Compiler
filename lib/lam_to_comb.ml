@@ -17,12 +17,14 @@ let rec abstract var exp = match exp with
     | CPlus               -> CApp (K, exp)
     | CInt n              -> CApp (K, CInt n)
     | CBool b             -> CApp (K, CBool b)
+    | CString s           -> CApp (K, CString s)
     | CApp (e1, e2)       -> CApp (CApp (S, (abstract var e1)), (abstract var e2))
 
 let rec lam_to_comb exp = match exp with
     | LVar x          -> CVar x
     | LInt n          -> CInt n
     | LBool b         -> CBool b
+    | LString s       -> CString s
     | LEq             -> CEq
     | LIf             -> CIf
     | LHead           -> CHead

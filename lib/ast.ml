@@ -21,7 +21,6 @@ type exp =
     | Match of exp list * (pat list * exp) list
     | If of exp * exp * exp
     | Cons of exp * exp
-    (* | Type of string * string * string list * exp *)
     | Constr of string * string list * exp
     | Pack of string * exp list
     | Unpack of string * exp * int

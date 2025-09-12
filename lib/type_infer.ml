@@ -4,6 +4,7 @@ open Ast
 type typ = 
     | TInt
     | TBool
+    | TString
     | TLam of typ * typ
     | TList of typ
     | TConstr of string
@@ -31,8 +32,9 @@ let rec unify t1 t2 =
     let t1 = prune t1 in
     let t2 = prune t2 in 
     match (t1, t2) with
-        | TInt, TInt   -> ()
-        | TBool, TBool -> ()
+        | TInt, TInt       -> ()
+        | TBool, TBool     -> ()
+        | TString, TString -> ()
     
         | TLam (v1, b1), TLam (v2, b2) ->
             unify v1 v2;
@@ -94,6 +96,9 @@ let rec infer expr env = match expr with
     | EBool _ -> 
         (* let () = print_endline "BOOl" in *)
         TBool
+    | EString _ ->
+        (* let () = print_endline "STRING" in *)
+        TString
     | EFail   -> 
         (* let () = print_endline "FAIL" in *)
         fresh_var ()

@@ -14,7 +14,7 @@ let incr_linenum lexbuf =
 let white = [' ' '\t']+
 let digit = ['0'-'9']
 let int = '-'? digit+
-let var = ['a'-'z']['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
+let var = ['a'-'z' '_']['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
 let constr = ['A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
 
 rule read = 

@@ -171,6 +171,15 @@ Node *mk_bool(Bool cond) {
     return node;
 }
 
+Node *mk_string(char *s) {
+    Node *node = heap_alloc(sizeof(Node), alignof(Node));
+
+    node->tag = NODE_STRING;
+    node->str = s;
+
+    return node;
+}
+
 Node *mk_empty() {
     Node *node = heap_alloc(sizeof(Node), alignof(Node));
 
@@ -362,11 +371,16 @@ Node *eval_iscons() {
 }
 
 Node *eval_isconstr() {
-    // printf("EVAL_ISCONSTR\n");
     Node *exp = unwind(stack_pop());
-    Node *constr = stack_pop(); // should NOT unwind, TODO -- better way to do comparison in IsConstr?
 
-    if (exp->tag == NODE_STRUCT && strcmp(exp->s_name, constr->c_name)) {
+    Node *name_str = stack_pop();
+    stack_push(exp);
+
+    name_str = unwind(name_str);
+    exp = stack_pop();
+
+
+    if (exp->tag == NODE_STRUCT && strcmp(exp->s_name, name_str->str) == 0) {
         return mk_bool(true);
     } 
     else {
@@ -458,6 +472,9 @@ Node *unwind(Node *node) {
         case NODE_BOOL:
             return node;
 
+        case NODE_STRING:
+            return node;
+
         case NODE_EMPTY:
             return node;
 
@@ -505,9 +522,10 @@ Node *reduce() {
         Node *root = stack_pop();
         Node *result = unwind(root);
 
-        if (result->tag == NODE_INT || result->tag == NODE_BOOL 
+        if (result->tag == NODE_INT || result->tag == NODE_BOOL
             || result->tag == NODE_EMPTY || result->tag == NODE_FAIL
-            || result->tag == NODE_CONS || result->tag == NODE_STRUCT) {
+            || result->tag == NODE_CONS || result->tag == NODE_STRUCT
+            || result->tag == NODE_STRING) {
             return result;
         }
 
@@ -523,6 +541,9 @@ void print_node(Node *node) {
     }
     else if (node->tag == NODE_BOOL) {
         util_print_bool(node->cond);
+    }
+    else if (node->tag == NODE_STRING) {
+        printf("%s", node->str);
     }
     else if (node->tag == NODE_EMPTY) {
         printf("[]");

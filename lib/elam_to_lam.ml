@@ -5,7 +5,7 @@ let rec elam_to_lam expr = match expr with
     | EVar x               -> LVar x
     | EInt n               -> LInt n 
     | EBool b              -> LBool b
-    (* | EString s            -> LString s *)
+    | EString s            -> LString s
     | EEq                  -> LEq
     | EPlus                -> LPlus 
     | EIf                  -> LIf

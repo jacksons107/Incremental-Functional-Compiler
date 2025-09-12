@@ -11,6 +11,7 @@ let rec pp_elam elam_exp = match elam_exp with
     | EVar x -> "Var " ^ x
     | EInt n -> string_of_int n
     | EBool b -> string_of_bool b
+    | EString s -> s
     | EEq -> "=="
     | EIsCons -> "IsCons"
     | EPlus -> "+"

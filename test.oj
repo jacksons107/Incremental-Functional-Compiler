@@ -2,4 +2,5 @@ type pair = Pair of int * int | None;
 let test = Pair (69, 420);
 match test with 
     | None -> 0
-    | Pair (69, 420) -> 420
+    | Pair (_, 421) -> 420
+    | _ -> 699

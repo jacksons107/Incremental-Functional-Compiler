@@ -10,6 +10,7 @@ type code_ptr =
 type j_instr =
     | INT of int
     | BOOL of bool
+    | STRING of string
     | EMPTY
     | FAIL
     | GLOBAL of int * code_ptr
@@ -49,6 +50,7 @@ let builtin_name name = match name with
 let emit_instr instr = match instr with
     | INT n            -> Printf.sprintf "stack_push(mk_int(%d));" n
     | BOOL b           -> Printf.sprintf "stack_push(mk_bool(%B));" b
+    | STRING s         -> Printf.sprintf "stack_push(mk_string(%s));" ("\"" ^ s ^ "\"")
     | EMPTY            -> "stack_push(mk_empty());"
     | FAIL             -> "stack_push(mk_fail());"
     | GLOBAL (n, name) -> Printf.sprintf "stack_push(mk_global(%d, %s, %s));" n (builtin_fn name) (builtin_name name)

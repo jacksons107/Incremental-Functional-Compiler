@@ -2,6 +2,7 @@ type lam_exp =
     | LVar of string
     | LInt of int
     | LBool of bool
+    | LString of string
     | LEq
     | LPlus
     | LIf

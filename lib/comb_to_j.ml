@@ -11,6 +11,7 @@ let rec pp_comb cexp = match cexp with
   | CY             -> "Y"
   | CInt n         -> string_of_int n
   | CBool b        -> string_of_bool b
+  | CString s      -> "String " ^ s
   | CVar v         -> "CVar " ^ v
   | I              -> "I"
   | K              -> "K"
@@ -30,6 +31,7 @@ let rec pp_comb cexp = match cexp with
 let rec comb_to_j exp = match exp with
     | CInt n         -> [INT n]
     | CBool b        -> [BOOL b]
+    | CString s      -> [STRING s]
     | CEmpty         -> [EMPTY]
     | CFail          -> [FAIL]
     | CCons          -> [GLOBAL (2, CONS)]

@@ -16,6 +16,7 @@ typedef enum {
 typedef enum {
     NODE_INT,
     NODE_BOOL,
+    NODE_STRING,
     NODE_GLOBAL,
     NODE_APP,
     NODE_CONS,
@@ -32,6 +33,7 @@ typedef struct Node {
     union {
         int64_t val;                            // NODE_INT
         Bool cond;                              // NODE_BOOL
+        char *str;                              // NODE_STRING
         struct Node *forwarded;                 // FORWARDED
         struct {                                // NODE_APP
             struct Node *fn;
@@ -92,6 +94,9 @@ Node *mk_int(int64_t val);
 
 /* makes a bool node and returns a pointer to it to be pushed onto the stack */
 Node *mk_bool(Bool cond);
+
+/* makes a string node and returns a pointer to it to be pushed onto the stack */
+Node *mk_string(char *s);
 
 /* makes an empty node (just a tag) */
 Node *mk_empty();

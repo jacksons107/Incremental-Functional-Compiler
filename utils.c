@@ -57,6 +57,9 @@ void util_print_node(Node *node) {
     else if (node->tag == NODE_BOOL) {
         util_print_bool(node->cond);
     }
+    else if (node->tag == NODE_STRING) {
+        printf("%s", node->str);
+    }
     else if (node->tag == NODE_EMPTY) {
         printf("[]");
     }
