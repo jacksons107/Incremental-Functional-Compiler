@@ -1,6 +1,5 @@
 type pair = Pair of int * int | None;
-let test = Pair (69, 420);
+let test = None;
 match test with 
     | None -> 0
     | Pair (_, 421) -> 420
-    | _ -> 699

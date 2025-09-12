@@ -50,7 +50,6 @@ def:
     | LET; v = VAR; BIND; b = exp; SEMI {DLet (v, b)}
     | DEF; n = VAR; v = list(VAR); BIND; e = exp; SEMI {DDef (n, v, e)}
     | DEFREC; n = VAR; v = list(VAR); BIND; e = exp; SEMI {DDefrec (n, v, e)}
-    // | TYPE; n = VAR; BIND; c = CONSTR; OF; a = separated_list(STAR, VAR); SEMI {DType (n, c, a)}
     | TYPE; n = VAR; BIND; cs = separated_nonempty_list(BAR, constr_def); SEMI {DType (n, cs)}
 
 
@@ -68,6 +67,7 @@ exp:
     | n = nonmatch_exp {n}
     | m = match_exp {m}
 
+// TODO -- better name for nonmatch_exp & match_exp
 nonmatch_exp:
     | LPAREN; m = match_exp; RPAREN {m}
     | IF; b = nonmatch_exp; THEN; e1 = nonmatch_exp; ELSE; e2 = nonmatch_exp {If (b, e1, e2)}
@@ -76,6 +76,7 @@ nonmatch_exp:
 
 match_exp:
     | MATCH; scrut = nonmatch_exp; WITH; cases = match_cases {Match ([scrut], cases)}
+    | c = CONSTR {Pack (c, [])}
 
 match_cases:
     | BAR; cs = separated_nonempty_list(BAR, match_case) {cs}
@@ -105,6 +106,7 @@ app_exp:
     | CONS; LPAREN; e1 = nonmatch_exp; COMMA; e2 = nonmatch_exp; RPAREN {Cons (e1, e2)}
     | CONS; LPAREN; e = nonmatch_exp; RPAREN {Cons (e, Empty)}   // get rid of this?
     | c = CONSTR; LPAREN; a = separated_list(COMMA, nonmatch_exp); RPAREN {Pack (c, a)}
+    // | c = CONSTR {Pack (c, [])}
     | HEAD; c = atom {Head c}
     | TAIL; c = atom {Tail c}
     | f = app_exp; arg = atom {App (f, arg)}
