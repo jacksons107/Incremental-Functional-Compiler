@@ -21,7 +21,8 @@ type exp =
     | Match of exp list * (pat list * exp) list
     | If of exp * exp * exp
     | Cons of exp * exp
-    | Type of string * string * string list * exp
+    (* | Type of string * string * string list * exp *)
+    | Constr of string * string list * exp
     | Pack of string * exp list
     | Unpack of string * exp * int
     | List of exp list
@@ -34,7 +35,8 @@ type def =
     | DLet of string * exp
     | DDef of string * string list * exp
     | DDefrec of string * string list * exp
-    | DType of string * string * string list
+    | DConstr of string * string * string list
+    | DType of string * (string * string list) list
 
 type typedef = 
     TypeDef of string * string * string list

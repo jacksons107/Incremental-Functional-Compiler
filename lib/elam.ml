@@ -2,6 +2,7 @@ type elam_exp =
     | EVar of string
     | EInt of int
     | EBool of bool
+    (* | EString of string *)
     | EEq
     | EPlus
     | EIf

@@ -88,65 +88,87 @@ let rec setup_env typedefs env = match typedefs with
         setup_env xs new_env
 
 let rec infer expr env = match expr with
-    | EInt _  -> TInt
-    | EBool _ -> TBool
-    | EFail   -> fresh_var ()
-    | EVar x  -> lookup env x
+    | EInt _  -> 
+        (* let () = print_endline "INT" in *)
+        TInt
+    | EBool _ -> 
+        (* let () = print_endline "BOOl" in *)
+        TBool
+    | EFail   -> 
+        (* let () = print_endline "FAIL" in *)
+        fresh_var ()
+    | EVar x  -> 
+        (* let () = print_endline "VAR" in *)
+        lookup env x
 
-    | EPlus   -> 
+    | EPlus -> 
+        (* let () = print_endline "PLUS" in *)
         TLam (TInt, TLam (TInt, TInt))
 
     | EIf -> 
+        (* let () = print_endline "IF" in *)
         let fresh = fresh_var () in
         TLam (TBool, TLam (fresh, TLam (fresh, fresh)))
 
     | EEq -> 
+        (* let () = print_endline "EQ" in *)
         let fresh = fresh_var () in
         TLam (fresh, TLam (fresh, TBool))
 
     | ECons ->
+        (* let () = print_endline "CONS" in *)
         let fresh = fresh_var () in
         TLam (fresh, TLam (TList fresh, TList fresh))
 
     | EEmpty ->
+        (* let () = print_endline "EMPTY" in *)
         let fresh = fresh_var () in
         TList fresh
 
     | EHead  ->
+        (* let () = print_endline "HEAD" in *)
         let fresh = fresh_var () in
         TLam (TList fresh, fresh)
 
     | ETail ->
+        (* let () = print_endline "TAIL" in *)
         let fresh = fresh_var () in
         TLam (TList fresh, TList fresh)
 
     | EIsCons ->
+        (* let () = print_endline "ISCONS" in *)
         let fresh = fresh_var () in 
         TLam (fresh, TBool) 
 
     | EIsConstr ->
+        (* let () = print_endline "ISCONSTR" in *)
         let fresh1 = fresh_var () in 
         let fresh2 = fresh_var () in
         TLam (fresh1, TLam (fresh2, TBool))
 
     | EY ->
+        (* let () = print_endline "Y" in *)
         let fresh = fresh_var () in
         TLam (TLam (fresh, fresh), fresh)
 
     (* TODO -- prevent multiple types with same constructor *)
     | EConstr (cname, _) -> 
+        (* let () = print_endline "CONSTR" in *)
         lookup env cname
 
     | EUnpack (cname, _, idx) ->
+        (* let () = print_endline "UNPACK" in *)
         let constr_typ = lookup env cname in
         unpack_helper constr_typ idx
 
     | ELam (v, b) ->
+        (* let () = print_endline "LAM" in *)
         let fresh = fresh_var () in
         let new_env = Env.add v fresh env in
         TLam (fresh, infer b new_env)
 
     | EApp (f, a) -> 
+        (* let () = print_endline "APP" in *)
         let f_typ = infer f env in
         let a_typ = infer a env in
         let fresh = fresh_var () in
@@ -154,6 +176,7 @@ let rec infer expr env = match expr with
         prune fresh
 
     | ELet (v, e, b) ->
+        (* let () = print_endline "LET" in *)
         let e_typ = infer e env in
         let new_env = Env.add v e_typ env in
         infer b new_env

@@ -1,5 +1,5 @@
-type pair = Pair of int * int;
+type pair = Pair of int * int | None;
 let test = Pair (69, 420);
 match test with 
-    | Pair (43, x) -> x
-    | Pair (69, y) -> y
+    | None -> 0
+    | Pair (69, 420) -> 420

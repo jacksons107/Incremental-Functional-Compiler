@@ -50,7 +50,14 @@ def:
     | LET; v = VAR; BIND; b = exp; SEMI {DLet (v, b)}
     | DEF; n = VAR; v = list(VAR); BIND; e = exp; SEMI {DDef (n, v, e)}
     | DEFREC; n = VAR; v = list(VAR); BIND; e = exp; SEMI {DDefrec (n, v, e)}
-    | TYPE; n = VAR; BIND; c = CONSTR; OF; a = separated_list(STAR, VAR); SEMI {DType (n, c, a)}
+    // | TYPE; n = VAR; BIND; c = CONSTR; OF; a = separated_list(STAR, VAR); SEMI {DType (n, c, a)}
+    | TYPE; n = VAR; BIND; cs = separated_nonempty_list(BAR, constr_def); SEMI {DType (n, cs)}
+
+
+constr_def:
+    | c = CONSTR; OF; a = separated_list(STAR, VAR) {(c, a)}
+    | c = CONSTR {(c, [])}
+
 
 local_def:
     | LET; v = VAR; BIND; b = nonmatch_exp; IN; e = nonmatch_exp {Let (v, b, e)}
@@ -62,7 +69,6 @@ exp:
     | m = match_exp {m}
 
 nonmatch_exp:
-    // | TYPE; n = VAR; BIND; c = CONSTR; OF; a = separated_list(STAR, VAR); IN; r = nonmatch_exp {Type (n, c, a, r)}
     | LPAREN; m = match_exp; RPAREN {m}
     | IF; b = nonmatch_exp; THEN; e1 = nonmatch_exp; ELSE; e2 = nonmatch_exp {If (b, e1, e2)}
     | LPAREN; l = local_def; RPAREN {l}
@@ -83,6 +89,7 @@ pat:
     | v = VAR {PVar v}
     | LPAREN; e1 = pat; COMMA; e2 = pat; RPAREN {PCons (e1, PCons (e2, PEmpty))}
     | c = CONSTR; LPAREN; a = separated_list(COMMA, pat); RPAREN {PConstr (c, a)}
+    | c = CONSTR {PConstr (c, [])}
     | EMPTY {PEmpty}
 
 bool_exp:
