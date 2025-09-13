@@ -39,6 +39,7 @@ open Ast
 %token COMMA
 %token EOF
 
+%right CONS
 %left PLUS
 
 
@@ -86,6 +87,7 @@ nonmatch_exp:
 
 match_exp:
     | MATCH; scrut = nonmatch_exp; WITH; cases = match_cases {Match ([scrut], cases)}
+    | e1 = nonmatch_exp; CONS; e2 = nonmatch_exp {Cons (e1, e2)}
     | c = CONSTR {Pack (c, [])}
 
 match_cases:
@@ -98,7 +100,7 @@ pat:
     | i = INT {PInt i}
     | b = BOOL {PBool b}
     | v = VAR {PVar v}
-    | LPAREN; e1 = pat; COMMA; e2 = pat; RPAREN {PCons (e1, PCons (e2, PEmpty))}
+    | e1 = pat; CONS; e2 = pat {PCons (e1, e2)}
     | c = CONSTR; LPAREN; a = separated_list(COMMA, pat); RPAREN {PConstr (c, a)}
     | c = CONSTR {PConstr (c, [])}
     | EMPTY {PEmpty}
@@ -111,12 +113,8 @@ math_exp:
     | e1 = math_exp; PLUS; e2 = math_exp {Plus (e1, e2)}
     | e = app_exp {e}
 
-// TODO -- change outer CONS to infix ::
 app_exp:
-    | CONS; LPAREN; e1 = nonmatch_exp; COMMA; e2 = nonmatch_exp; RPAREN {Cons (e1, e2)}
-    | CONS; LPAREN; e = nonmatch_exp; RPAREN {Cons (e, Empty)}   // get rid of this?
     | c = CONSTR; LPAREN; a = separated_list(COMMA, nonmatch_exp); RPAREN {Pack (c, a)}
-    // | c = CONSTR {Pack (c, [])}
     | HEAD; c = atom {Head c}
     | TAIL; c = atom {Tail c}
     | f = app_exp; arg = atom {App (f, arg)}

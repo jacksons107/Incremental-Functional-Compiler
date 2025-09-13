@@ -48,7 +48,7 @@ rule read =
     | "==" {EQ}
     | "=" {BIND}
     | "in" {IN}
-    | "Cons" {CONS}
+    | "::" {CONS}
     | "head" {HEAD}
     | "tail" {TAIL}
     | "[]" {EMPTY}

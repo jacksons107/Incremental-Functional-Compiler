@@ -1,2 +1,4 @@
-type nested = Nest of (int list) list;
-Nest ([[1, 2, 3], [4, 5, 6]])
+let foo = [2, 3];
+let bar = 1::foo;
+match bar with
+    | x::y::z -> y
