@@ -1,19 +1,6 @@
 open Elam
 open Ast
 
-type typ = 
-    | TInt
-    | TBool
-    | TString
-    | TLam of typ * typ
-    | TList of typ
-    | TConstr of string
-    | TVar of tyvar ref
-
-and tyvar = 
-    | Unbound of int
-    | Link of typ
-
 let fv = ref 0
 let fresh_var () = 
     let fv_ref = !fv in
@@ -85,7 +72,7 @@ let rec unpack_helper s_typ idx =
 let rec setup_env typedefs env = match typedefs with
     | [] -> env
     | TypeDef (t, c, a)::xs -> 
-        let new_typ = typedef_helper t (args_to_typs a) in
+        let new_typ = typedef_helper t a in
         let new_env = Env.add c new_typ env in
         setup_env xs new_env
 

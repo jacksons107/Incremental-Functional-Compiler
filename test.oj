@@ -1,6 +1,2 @@
-type pair = Pair of int * int | None;
-let test = None;
-match test with 
-    | None -> 0
-    | Pair (_, 421) -> 420
-    | _ -> 69
+type nested = Nest of (int list) list;
+Nest ([[1, 2, 3], [4, 5, 6]])

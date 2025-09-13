@@ -6,6 +6,10 @@ open Ast
 %token <int> INT 
 %token <bool> BOOL
 %token <string> CONSTR
+%token TYPINT
+%token TYPBOOL
+%token TYPSTRING
+%token TYPLIST
 %token SEMI
 %token CONS
 %token HEAD
@@ -52,9 +56,15 @@ def:
     | DEFREC; n = VAR; v = list(VAR); BIND; e = exp; SEMI {DDefrec (n, v, e)}
     | TYPE; n = VAR; BIND; cs = separated_nonempty_list(BAR, constr_def); SEMI {DType (n, cs)}
 
+typ:
+    | TYPINT {TInt}
+    | TYPBOOL {TBool}
+    | TYPSTRING {TString}
+    | t = typ; TYPLIST {TList t}
+    | LPAREN; t = typ; RPAREN {t}
 
 constr_def:
-    | c = CONSTR; OF; a = separated_list(STAR, VAR) {(c, a)}
+    | c = CONSTR; OF; a = separated_list(STAR, typ) {(c, a)}
     | c = CONSTR {(c, [])}
 
 

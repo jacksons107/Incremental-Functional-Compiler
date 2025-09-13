@@ -1,3 +1,16 @@
+type typ = 
+    | TInt
+    | TBool
+    | TString
+    | TLam of typ * typ
+    | TList of typ
+    | TConstr of string
+    | TVar of tyvar ref
+
+and tyvar = 
+    | Unbound of int
+    | Link of typ
+
 type pat = 
     | PVar of string
     | PInt of int
@@ -21,7 +34,7 @@ type exp =
     | Match of exp list * (pat list * exp) list
     | If of exp * exp * exp
     | Cons of exp * exp
-    | Constr of string * string list * exp
+    | Constr of string * typ list * exp
     | Pack of string * exp list
     | Unpack of string * exp * int
     | List of exp list
@@ -34,10 +47,9 @@ type def =
     | DLet of string * exp
     | DDef of string * string list * exp
     | DDefrec of string * string list * exp
-    | DConstr of string * string * string list
-    | DType of string * (string * string list) list
+    | DType of string * (string * typ list) list
 
 type typedef = 
-    TypeDef of string * string * string list
+    TypeDef of string * string * typ list
 
 type prog = Prog of def list * exp

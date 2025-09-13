@@ -29,6 +29,10 @@ rule read =
     | "else" {ELSE}
     | "True" {BOOL true}
     | "False" {BOOL false}
+    | "int" {TYPINT}
+    | "bool" {TYPBOOL}
+    | "string" {TYPSTRING}
+    | "list" {TYPLIST}
     | "(" {LPAREN}
     | ")" {RPAREN}
     | "," {COMMA}

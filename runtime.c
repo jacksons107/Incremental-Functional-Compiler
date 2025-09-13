@@ -558,11 +558,12 @@ void print_node(Node *node) {
         Node *e1 = reduce();  // pops e1
         Node *e2 = reduce();  // pops e2
 
-        printf("Cons (");
+        printf("[");
         print_node(e1);
         printf(", ");
         print_node(e2);
-        printf(")");
+        printf("]");
+
     }
     else if (node->tag == NODE_IND) {
         print_node(node->result);
