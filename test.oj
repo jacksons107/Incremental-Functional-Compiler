@@ -3,3 +3,4 @@ let test = None;
 match test with 
     | None -> 0
     | Pair (_, 421) -> 420
+    | _ -> 69

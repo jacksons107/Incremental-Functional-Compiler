@@ -30,9 +30,10 @@ let rec pp_elam elam_exp = match elam_exp with
     | ELet (v, b, e) -> "(let " ^ v ^ " = " ^ pp_elam b ^ " in " ^ pp_elam e ^ ")"
 
 let exp = "type pair = Pair of int * int | None;
-            let test = Pair (69, 420);
+            let test = None;
             match test with 
                 | None -> 0
+                | _ -> 666
                 | Pair (69, 420) -> 420"
 
 let () = print_endline (pp_elam (ast_to_elam (def_to_exp (parse exp))))

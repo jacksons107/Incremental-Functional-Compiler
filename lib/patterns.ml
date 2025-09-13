@@ -41,20 +41,34 @@ let inspect_row row =
             
 (* Partition matrix by first column constructor *)
 let partition (Matrix mat) =
-    let add_row part row = match row with
+    let add_row (branches, default) row = match row with
         | (p :: _, _) ->
             let tag = tag_of_pat p in
-            let rows = match TagMap.find_opt tag part with
-                | Some rs -> row :: rs
-                | None    -> [row]
-            in
-            TagMap.add tag rows part
+                (match tag with
+                    | TagVar ->
+                        let rows = match TagMap.find_opt tag default with
+                            | Some rs -> row :: rs
+                            | None    -> [row]
+                        in
+                        (branches, TagMap.add tag rows default)
+                    | _ ->
+                        let rows = match TagMap.find_opt tag branches with
+                            | Some rs -> row :: rs
+                            | None    -> [row]
+                        in
+                        (TagMap.add tag rows branches, default))
         | ([], _) -> failwith "row has no patterns"
     in
-    let part = List.map
-        (fun (tag, rows) -> (tag, Matrix rows))
-        (TagMap.bindings (List.fold_left add_row TagMap.empty mat))
-    in Partition part
+    let (branches, default) = 
+        List.fold_left add_row (TagMap.empty, TagMap.empty) mat
+    in
+    let b = List.map (fun (tag, rows) -> (tag, Matrix rows))
+                            (TagMap.bindings branches)
+    in
+    let d = List.map (fun (tag, rows) -> (tag, Matrix rows))
+                            (TagMap.bindings default)
+    in (Partition b, Partition d)
+
 
 (* Drop column 0 from matrix mat *)
 let drop_col0 (Matrix mat) =
@@ -124,36 +138,38 @@ let rec gen_bindings scruts row = match row with
             | e::es -> Let (get_string x, e, gen_bindings es (xs, rhs))
 
 (* Generate the tests that form the branches of the decision tree *)
-let rec gen_tests (Scruts scruts) (Partition part) = match part with
-    | []           -> Fail
+let rec gen_tests (Scruts scruts) (Partition bran, Partition def) = match bran with
+    | [] ->
+        (match def with
+            | [] -> Fail
+            | [(_, m)] -> compile_match (Scruts (List.tl scruts)) (drop_col0 m)
+            | _ -> failwith "Multiple defaults not yet supported")
     | (pt, m)::rst -> 
         match scruts with
             | []          -> failwith "Empty scruts in gen_tests"
             | scrut::rest ->
                 match pt with
-                    | TagVar -> Let (get_string (get_00 m), 
-                                  scrut, 
-                                    compile_match (Scruts rest) (drop_col0 m))
-
                     | TagInt n -> If (Eq (Int n, scrut), 
                                     compile_match (Scruts rest) (drop_col0 m), 
-                                      gen_tests (Scruts scruts) (Partition rst))
+                                      gen_tests (Scruts scruts) (Partition rst, Partition def))
 
                     | TagBool b -> If (Eq (Bool b, scrut), 
                                     compile_match (Scruts rest) (drop_col0 m), 
-                                      gen_tests (Scruts scruts) (Partition rst))
+                                      gen_tests (Scruts scruts) (Partition rst, Partition def))
 
                     | TagEmpty -> If (Eq (Empty, scrut), 
                                     compile_match (Scruts rest) (drop_col0 m), 
-                                      gen_tests (Scruts scruts) (Partition rst))
+                                      gen_tests (Scruts scruts) (Partition rst, Partition def))
 
                     | TagCons -> If (IsCons scrut, 
                                    compile_match (expand_cons scruts) (expand_col0 m), 
-                                     gen_tests (Scruts scruts) (Partition rst))
+                                     gen_tests (Scruts scruts) (Partition rst, Partition def))
                     
                     | TagConstr c -> If (IsConstr (scrut, c), 
                                        compile_match (expand_constr scruts m) (expand_col0 m), 
-                                         gen_tests (Scruts scruts) (Partition rst))
+                                         gen_tests (Scruts scruts) (Partition rst, Partition def))
+                    
+                    | TagVar -> failwith "Should not have var in branches parition"
 
 (* pattern match compilation driver *)
 and compile_match (Scruts scruts) (Matrix mat) = match mat with
