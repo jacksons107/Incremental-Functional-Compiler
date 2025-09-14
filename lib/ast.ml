@@ -1,3 +1,5 @@
+module IntSet = Set.Make(struct type t = int let compare = compare end)
+
 type typ = 
     | TInt
     | TBool
@@ -10,6 +12,9 @@ type typ =
 and tyvar = 
     | Unbound of int
     | Link of typ
+
+type tyscheme = 
+    Forall of IntSet.t * typ
 
 type pat = 
     | PVar of string

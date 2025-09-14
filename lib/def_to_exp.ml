@@ -17,7 +17,7 @@ let rec def_to_exp (Prog (defs, expr)) = match defs with
             | DDefrec (f, vs, e) -> Defrec (f, vs, e, def_to_exp (Prog (xs, expr)))
             | DType _            -> constr_chain x (def_to_exp (Prog (xs, expr)))
 
-(* DType -> DConstr list *)
+(* DType -> TypeDef list *)
 let rec get_constrs dtype = match dtype with
     | DType (tname, cs) -> (match cs with
         | [] -> []
