@@ -1,4 +1,4 @@
-open Def_to_exp
+open Desugar
 open Ast_to_elam
 open Type_infer
 open Elam_to_lam
@@ -29,10 +29,6 @@ let parse filename s =
       exit 1
 
 let compile filename exp = 
-    (* let elam = (ast_to_elam (def_to_exp (parse filename exp))) in
-    let _ = infer elam empty_env in
-    run_j_machine
-        (comb_to_j (lam_to_comb (elam_to_lam elam))) *)
     let Prog (defs, exp) = parse filename exp in
     let ast_exp = def_to_exp (Prog (defs, exp)) in
     let typedefs = get_types defs in
