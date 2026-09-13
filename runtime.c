@@ -389,9 +389,9 @@ Node *eval_isconstr() {
 }
 
 Node *eval_if() {
-    Node *bool = unwind(stack_pop());
+    Node *cond_node = unwind(stack_pop());
     Node *ret;
-    if (bool->cond == true) {
+    if (cond_node->cond == true) {
         ret = unwind(stack_pop());
         stack_pop();
     }

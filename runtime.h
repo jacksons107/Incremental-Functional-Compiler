@@ -6,12 +6,9 @@
 #include <stdlib.h>
 #include <stdalign.h>
 #include <string.h>
+#include <stdbool.h>
 
-// TODO -- replace Bool with stdbool
-typedef enum {
-    true,
-    false
-} Bool;
+typedef bool Bool;
 
 typedef enum {
     NODE_INT,
