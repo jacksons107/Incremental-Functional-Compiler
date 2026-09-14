@@ -1,3 +1,4 @@
+open Compiler
 open Desugar
 open Ast_to_elam
 open Type_infer
