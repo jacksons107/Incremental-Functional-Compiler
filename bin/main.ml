@@ -1,43 +1,4 @@
 open Compiler
-open Desugar
-open Ast_to_elam
-open Type_infer
-open Elam_to_lam
-open Lam_to_comb
-open Comb_to_j
-open J_machine
-
-(* TODO -- handle module interfaces in a cleaner way *)
-
-let print_position outx lexbuf =
-  let pos = lexbuf.Lexing.lex_curr_p in
-  Printf.fprintf outx "File \"%s\", line %d, column %d"
-    pos.Lexing.pos_fname
-    pos.Lexing.pos_lnum
-    (pos.Lexing.pos_cnum - pos.Lexing.pos_bol + 1)
-
-let parse filename s =
-  let lexbuf = Lexing.from_string s in
-  lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with Lexing.pos_fname = filename };
-  try
-    Parser.prog Lexer.read lexbuf
-  with
-  (* | Lexer.Error msg ->
-      Printf.eprintf "%a: lexer error: %s\n" print_position lexbuf msg;
-      exit 1 *)
-  | Parser.Error ->
-      Printf.eprintf "%a: syntax error\n" print_position lexbuf;
-      exit 1
-
-let compile filename exp = 
-    let Prog (defs, exp) = parse filename exp in
-    let ast_exp = def_to_exp (Prog (defs, exp)) in
-    let typedefs = get_types defs in
-    let env = setup_env typedefs empty_env in
-    let elam = ast_to_elam ast_exp in
-    let _ = infer elam env in
-    run_j_machine
-        (comb_to_j (lam_to_comb (elam_to_lam elam)))
 
 let () =
   if Array.length Sys.argv <> 2 then (
@@ -60,19 +21,8 @@ let () =
     s
   in
 
-  (* Compile to C code string *)
-  let entry = compile filename program in
-
-  (* Write generated.c *)
-  let oc = open_out "generated.c" in
-  output_string oc "#include \"runtime.h\"\n";
-  output_string oc "void entry() {\n";
-  output_string oc (entry ^ "\n");
-  output_string oc "}";
-  close_out oc;
-
-  (* Call gcc to produce executable *)
-  let cmd = "gcc -o prog generated.c runtime.c utils.c" in
-  match Sys.command cmd with
-  | 0 -> Printf.printf "Build successful. Run ./prog\n"
-  | n -> Printf.eprintf "gcc failed with code %d\n" n
+  let entry = Driver.compile_to_c ~filename ~source:program in
+  Driver.emit_c_file ~out_path:"generated.c" ~entry_body:entry;
+  match Driver.build_exe ~c_file:"generated.c" ~runtime_dir:"." ~out_exe:"prog" with
+  | Ok () -> Printf.printf "Build successful. Run ./prog\n"
+  | Error msg -> Printf.eprintf "%s\n" msg
