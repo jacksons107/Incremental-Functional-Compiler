@@ -26,6 +26,13 @@ _build/
 .dune-cache/
 .dune-project.lock
 
+# Local opam switch
+_opam/
+
+# Compiler output (generated per-invocation, not checked in)
+/generated.c
+/prog
+
 # Editor/IDE files
 *.swp
 *.swo
