@@ -13,3 +13,16 @@ opam install . --deps-only --with-test
 eval $(opam env)
 dune build
 ```
+
+## Running a program
+
+```sh
+dune exec bin/main.exe -- examples/hello.oj
+```
+
+This compiles, links, and runs the program in one shot, deriving the output
+binary's name from the input file (e.g. `examples/hello.oj` → `./hello`).
+Useful flags:
+
+- `-o <path>` — write the executable to `<path>` instead of the derived name.
+- `-c` / `--no-run` — build only; don't run the resulting executable.
