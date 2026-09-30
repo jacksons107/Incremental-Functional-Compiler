@@ -23,6 +23,36 @@ type j_instr =
   | CONSTR of int * string
   | APP
 
+let pp_code_ptr fmt name =
+  let s =
+    match name with
+    | ADD -> "ADD"
+    | EQ -> "EQ"
+    | ISCONS -> "ISCONS"
+    | ISCONSTR -> "ISCONSTR"
+    | IF -> "IF"
+    | CONS -> "CONS"
+    | HEAD -> "HEAD"
+    | TAIL -> "TAIL"
+    | UNPACK -> "UNPACK"
+    | Y -> "Y"
+    | I -> "I"
+    | K -> "K"
+    | S -> "S"
+  in
+  Format.fprintf fmt "%s" s
+
+let pp_instr fmt instr =
+  match instr with
+  | INT n -> Format.fprintf fmt "INT %d" n
+  | BOOL b -> Format.fprintf fmt "BOOL %b" b
+  | STRING s -> Format.fprintf fmt "STRING %S" s
+  | EMPTY -> Format.fprintf fmt "EMPTY"
+  | FAIL -> Format.fprintf fmt "FAIL"
+  | GLOBAL (n, name) -> Format.fprintf fmt "GLOBAL(%d, %a)" n pp_code_ptr name
+  | CONSTR (n, name) -> Format.fprintf fmt "CONSTR(%d, %s)" n name
+  | APP -> Format.fprintf fmt "APP"
+
 let builtin_fn name =
   match name with
   | ADD -> "eval_add"
