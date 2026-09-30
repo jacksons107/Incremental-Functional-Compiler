@@ -1,0 +1,6 @@
+(rule
+ (alias runtest)
+ (deps test_runtime.c ../runtime.c ../runtime.h ../utils.c ../utils.h)
+ (action
+  (system
+   "gcc -Dmain=runtime_orig_main_unused -I .. -c ../runtime.c -o runtime_for_test.o && gcc -I .. -c ../utils.c -o utils_for_test.o && gcc -I .. -o test_runtime test_runtime.c runtime_for_test.o utils_for_test.o && ./test_runtime")))
