@@ -1,0 +1,13 @@
+(rule
+ (target config.ml)
+ (action
+  (with-stdout-to
+   config.ml
+   (echo "let workspace_root = \"%{workspace_root}\"\n"))))
+
+(test
+ (name test_e2e)
+ (libraries compiler alcotest)
+ (deps
+  (source_tree fixtures)
+  (source_tree ../../runtime)))

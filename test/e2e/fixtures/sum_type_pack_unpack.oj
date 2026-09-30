@@ -1,0 +1,2 @@
+type pair = Pair of int * bool;
+match Pair(7, True) with | Pair(x, y) -> x
