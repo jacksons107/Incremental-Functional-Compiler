@@ -8,4 +8,5 @@ let () =
       ("type_infer", Test_type_infer.suite);
       ("lam_to_comb", Test_lam_to_comb.suite);
       ("comb_to_j", Test_comb_to_j.suite);
+      ("serialize", Test_serialize.suite);
     ]
