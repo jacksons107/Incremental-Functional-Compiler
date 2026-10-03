@@ -31,6 +31,14 @@ let compile_to_c ~filename ~source =
   let _ = infer elam env in
   run_j_machine (comb_to_j (lam_to_comb (elam_to_lam elam)))
 
+let typecheck ~filename ~source =
+  let (Prog (defs, exp)) = parse filename source in
+  let ast_exp = def_to_exp (Prog (defs, exp)) in
+  let typedefs = get_types defs in
+  let env = setup_env typedefs empty_env in
+  let elam = ast_to_elam ast_exp in
+  infer elam env
+
 let emit_c_file ~out_path ~entry_body =
   let oc = open_out out_path in
   output_string oc "#include \"runtime.h\"\n";

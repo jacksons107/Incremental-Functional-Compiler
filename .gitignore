@@ -32,6 +32,7 @@ _opam/
 # Compiler output (generated per-invocation, not checked in)
 /generated.c
 /prog
+/hello
 
 # Editor/IDE files
 *.swp
@@ -39,3 +40,6 @@ _opam/
 *~
 .DS_Store
 *.vscode/
+
+# AI-generated files
+PLAN.md

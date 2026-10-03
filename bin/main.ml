@@ -1,8 +1,9 @@
 open Compiler
 
-let usage_msg = "compiler [-o out] [-c] <file.oj>"
+let usage_msg = "compiler [-o out] [-c] [-t] <file.oj>"
 let output_path = ref None
 let no_run = ref false
+let typecheck_only = ref false
 let input_file = ref None
 
 let set_input f =
@@ -21,6 +22,9 @@ let speclist =
     ( "--no-run",
       Arg.Set no_run,
       "Build only; don't run the resulting executable" );
+    ( "-t",
+      Arg.Set typecheck_only,
+      "Type-check only; print the program's inferred type and exit" );
   ]
 
 let () =
@@ -45,6 +49,11 @@ let () =
     close_in ch;
     s
   in
+
+  if !typecheck_only then (
+    let ty = Driver.typecheck ~filename ~source:program in
+    Format.printf "%a@." Ast.pp_typ ty;
+    exit 0);
 
   let out_exe =
     match !output_path with

@@ -26,3 +26,4 @@ Useful flags:
 
 - `-o <path>` — write the executable to `<path>` instead of the derived name.
 - `-c` / `--no-run` — build only; don't run the resulting executable.
+- `-t` — type-check only; print the program's inferred type and exit (no C generated, nothing built or run).

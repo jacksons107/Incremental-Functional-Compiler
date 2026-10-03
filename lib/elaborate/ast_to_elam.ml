@@ -45,3 +45,15 @@ and app_constr constr args =
   match args with
   | [] -> constr
   | x :: xs -> EApp (app_constr constr xs, ast_to_elam x)
+
+(* Elaborates one top-level def's own body directly, with no enclosing
+   Let/rest -- unlike the Def/Defrec cases above, which only exist as part
+   of def_to_exp's whole-program chain. *)
+let def_to_elam (d : def) : string * elam_exp =
+  match d with
+  | DLet (name, body) -> (name, ast_to_elam body)
+  | DDef (name, vars, body) -> (name, curry vars (ast_to_elam body))
+  | DDefrec (name, vars, body) ->
+      (name, EApp (EY, curry (name :: vars) (ast_to_elam body)))
+  | DType _ ->
+      failwith "def_to_elam: type definitions have no body to elaborate"

@@ -50,6 +50,7 @@ open Ast
 
 prog:
     | ds = list(def); e = exp; EOF {Prog (ds, e)}
+    | ds = list(def); EOF {Prog (ds, Fail)}
 
 def:
     | LET; v = VAR; BIND; b = exp; SEMI {DLet (v, b)}
