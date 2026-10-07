@@ -22,6 +22,7 @@ type j_instr =
   | GLOBAL of int * code_ptr
   | CONSTR of int * string
   | APP
+  | ID of string
 
 let pp_code_ptr fmt name =
   let s =
@@ -52,6 +53,7 @@ let pp_instr fmt instr =
   | GLOBAL (n, name) -> Format.fprintf fmt "GLOBAL(%d, %a)" n pp_code_ptr name
   | CONSTR (n, name) -> Format.fprintf fmt "CONSTR(%d, %s)" n name
   | APP -> Format.fprintf fmt "APP"
+  | ID name -> Format.fprintf fmt "ID %s" name
 
 let builtin_fn name =
   match name with
@@ -85,7 +87,13 @@ let builtin_name name =
   | K -> "\"K\""
   | S -> "\"S\""
 
-let emit_instr instr =
+(* [resolve] looks up a definition's assembly-time globals[] index by name
+   -- built by the assembly step (Driver.compile_to_c) from the processing
+   order of whatever definitions the program's entry point transitively
+   needs. Nothing is rendered until every ID in the program is already
+   resolvable, so resolve is total over every name emit_instr will ever
+   see here -- there's no placeholder/unresolved case to handle. *)
+let emit_instr resolve instr =
   match instr with
   | INT n -> Printf.sprintf "stack_push(mk_int(%d));" n
   | BOOL b -> Printf.sprintf "stack_push(mk_bool(%B));" b
@@ -98,6 +106,7 @@ let emit_instr instr =
   | CONSTR (n, name) ->
       Printf.sprintf "stack_push(mk_constr(%d, %s));" n ("\"" ^ name ^ "\"")
   | APP -> "stack_push(mk_app(stack_pop(), stack_pop()));"
+  | ID name -> Printf.sprintf "stack_push(globals_get(%d));" (resolve name)
 
-let build_graph instrs = String.concat "\n" (List.map emit_instr instrs)
-let run_j_machine instrs = build_graph instrs
+let build_graph resolve instrs =
+  String.concat "\n" (List.map (emit_instr resolve) instrs)

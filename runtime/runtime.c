@@ -7,6 +7,7 @@ Bool debug_enabled = false;
 #define HEAP_SIZE (4 * 1024 * 1024)   // 4 MB per semi-space
 // #define HEAP_SIZE (4 * 1024 * 10)   // mini heap for testing
 #define STACK_SIZE (128 * 1024)       // 128K entries ~ 1 MB
+#define GLOBALS_SIZE 4096             // one slot per top-level definition
 
 // initialize the heap and heap pointer
 uint8_t heap1[HEAP_SIZE];
@@ -21,6 +22,12 @@ size_t to_hp = 0; // offset into to_space
 // initialize the stack and stack pointer
 Node *stack[STACK_SIZE];
 int sp = 0;
+
+// one Node* per top-level definition, appended in dependency order as the
+// program's definitions are built; a second, permanent root set alongside
+// stack[] (see collect_garbage)
+Node *globals[GLOBALS_SIZE];
+int num_globals = 0;
 
 
 // program graph constructed by the compiler
@@ -37,6 +44,13 @@ void collect_garbage() {
     // copy root nodes on stack to to_space
     for (int i = 0; i < sp; i++) {
         stack[i] = copy_to_space(stack[i]);
+    }
+
+    // copy root nodes in globals[] to to_space -- unconditional, same as
+    // stack[]: a definition's graph must stay valid for the whole program
+    // run even while nothing on the stack currently points to it
+    for (int i = 0; i < num_globals; i++) {
+        globals[i] = copy_to_space(globals[i]);
     }
 
     // scan to_space for references
@@ -287,6 +301,19 @@ Node *stack_pop() {
 
 Node *stack_peak(int n) {
     return stack[sp-n-1];
+}
+
+void globals_push(Node *node) {
+    if (num_globals >= GLOBALS_SIZE) {
+        printf("Globals overflow\n");
+        exit(-1);
+    }
+    globals[num_globals] = node;
+    num_globals++;
+}
+
+Node *globals_get(int idx) {
+    return globals[idx];
 }
 
 Node *eval_I() {

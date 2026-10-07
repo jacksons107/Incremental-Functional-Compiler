@@ -58,6 +58,7 @@ let suite =
       "if_branch";
       "list_pattern_match";
       "sum_type_pack_unpack";
+      "separate_compilation";
     ]
 
 let () = Alcotest.run "compiler e2e" [ ("e2e", suite) ]

@@ -30,6 +30,7 @@ static int failures = 0;
   } while (0)
 
 static void reset_stack(void) { sp = 0; }
+static void reset_globals(void) { num_globals = 0; }
 
 static void test_stack_ops(void) {
   reset_stack();
@@ -202,6 +203,36 @@ static void test_gc_preserves_cons(void) {
   reset_stack();
 }
 
+static void test_globals_ops(void) {
+  reset_globals();
+  globals_push(mk_int(1));
+  globals_push(mk_int(2));
+  CHECK(num_globals == 2, "globals_push increments num_globals");
+  CHECK(globals_get(0)->val == 1, "globals_get(0) returns the first pushed node");
+  CHECK(globals_get(1)->val == 2, "globals_get(1) returns the second pushed node");
+}
+
+/* The whole point of globals[] being its own root set (scanned by
+   collect_garbage independently of stack[]): a definition's node can sit
+   in globals[] with nothing currently on the stack pointing to it -- the
+   gap between being built and being next referenced via an ID instruction
+   -- and still survive a collection that happens during that gap. */
+static void test_gc_preserves_globals_with_empty_stack(void) {
+  reset_stack();
+  reset_globals();
+  globals_push(mk_cons(mk_int(10), mk_int(20)));
+  CHECK(sp == 0, "nothing on the stack points at the global");
+
+  collect_garbage();
+
+  Node *survived = globals_get(0);
+  CHECK(survived->tag == NODE_CONS,
+        "a globals[] entry survives collect_garbage with an empty stack");
+  CHECK(survived->e1->val == 10 && survived->e2->val == 20,
+        "the surviving global's nested values are intact");
+  reset_globals();
+}
+
 static void test_gc_preserves_struct(void) {
   reset_stack();
   stack_push(mk_int(2));
@@ -230,6 +261,8 @@ int main(void) {
   test_eval_isconstr();
   test_eval_unpack();
   test_eval_Y();
+  test_globals_ops();
+  test_gc_preserves_globals_with_empty_stack();
   test_gc_preserves_cons();
   test_gc_preserves_struct();
 

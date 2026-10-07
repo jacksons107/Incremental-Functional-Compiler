@@ -65,6 +65,14 @@ extern size_t hp;
 extern Node *stack[];
 extern int sp;
 
+/* one Node* per top-level definition compiled into the program, indexed by
+   its position in the dependency-ordered assembly; a permanent root set
+   (scanned by collect_garbage alongside stack[]) separate from the
+   evaluation stack's transient one, since a definition's built graph must
+   survive for the program's whole run, not just while it's on the stack */
+extern Node *globals[];
+extern int num_globals;
+
 /* free up heap space by copying live nodes in from_space to to_space */
 void collect_garbage();
 
@@ -191,6 +199,14 @@ Node *stack_pop();
 
 /* peak at nth from the top node of stack */
 Node *stack_peak(int n);
+
+/* append a node to globals[], growing num_globals by one; the index it
+   lands at is the definition's permanent globals[] slot for the rest of
+   the program's run */
+void globals_push(Node *node);
+
+/* look up a definition's node by its globals[] index */
+Node *globals_get(int idx);
 
 /* unwind the program graph and apply the leftmost outermost redex */
 Node *unwind(Node *node);

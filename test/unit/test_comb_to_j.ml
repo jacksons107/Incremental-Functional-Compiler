@@ -31,9 +31,8 @@ let suite =
     check "3-arity builtin (CIf) nested application"
       (CApp (CApp (CApp (CIf, CBool true), CInt 1), CInt 2))
       [ INT 2; INT 1; BOOL true; GLOBAL (3, IF); APP; APP; APP ];
-    Alcotest.test_case
-      "a free CVar surviving to this stage is a compiler bug (raises Failure)"
-      `Quick (fun () ->
-        Alcotest.check_raises "CVar" (Failure "CVar x") (fun () ->
-            ignore (comb_to_j (CVar "x"))));
+    check
+      "a free CVar compiles to an unresolved ID, not a compiler error (names \
+       are resolved later, at assembly time)"
+      (CVar "x") [ ID "x" ];
   ]

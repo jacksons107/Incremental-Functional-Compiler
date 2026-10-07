@@ -1,0 +1,12 @@
+type pair = Pair of int * int;
+
+def mk a b = Pair(a, b);
+def fst p = match p with | Pair(x, y) -> x;
+def snd p = match p with | Pair(x, y) -> y;
+
+defrec sum_to n = if n == 0 then 0 else n + sum_to (n + -1);
+
+def unused n = n + 999;
+
+let p = mk 3 4;
+fst p + snd p + sum_to 5
