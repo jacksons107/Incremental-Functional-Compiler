@@ -2,17 +2,23 @@ open Compiler
 open Ast
 open J_machine
 
-(* Exercises Driver.inspect_defs: the name-keyed bottom-up walk that
+(* Exercises Driver.inspect_defs: the hash-keyed bottom-up walk that
    type-checks and compiles each top-level definition on its own, caching
-   its j_instr list with ID <name> for every free variable rather than
-   chaining the whole program into one expression. *)
+   its j_instr list (with ID <name> for every free variable) under the
+   hash of its own body rather than its name, so that two
+   differently-named, identically-bodied definitions share one cache
+   entry. *)
 
 let instr = Alcotest.testable pp_instr ( = )
 let entries = Alcotest.(list (pair string (list instr)))
 
+(* Reconstructs a name-keyed view for assertions, via the same two-step
+   lookup compile_to_c's own `resolve` does: a name -> hash via hash_env,
+   then hash -> compiled instructions via cache. *)
 let compile src =
   let (Prog (defs, _)) = Driver.parse "test.oj" src in
-  snd (Driver.inspect_defs defs)
+  let _, hash_env, cache = Driver.inspect_defs defs in
+  List.map (fun (name, hash) -> (name, List.assoc hash cache)) hash_env
 
 let check name src expected =
   Alcotest.test_case name `Quick (fun () ->
@@ -59,4 +65,15 @@ let suite =
         Alcotest.check_raises "unbound"
           (Type_infer.Type_error "Unbound variable: undefined") (fun () ->
             ignore (compile "let bad = undefined;")));
+    Alcotest.test_case
+      "two differently-named definitions with identical bodies hash to the \
+       same cache entry"
+      `Quick (fun () ->
+        let (Prog (defs, _)) =
+          Driver.parse "test.oj" "let a = 5;\nlet b = 5;"
+        in
+        let _, hash_env, _ = Driver.inspect_defs defs in
+        Alcotest.(check string)
+          "a and b share a hash" (List.assoc "a" hash_env)
+          (List.assoc "b" hash_env));
   ]

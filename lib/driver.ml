@@ -31,52 +31,53 @@ let typecheck ~filename ~source =
   let elam = ast_to_elam ast_exp in
   infer elam env
 
-(* Separate compilation, name-keyed: walks a Prog's definitions in source
-   order -- already a valid dependency order, since forward references
-   aren't possible and Defrec's self-recursion is closed via the
-   Y-combinator trick, so a recursive call is a bound reference, never an
-   ID. The *type* environment for every DType anywhere in the program is
-   folded in up front (same as typecheck above), since get_types/setup_env
-   already scan the whole defs list regardless of position. Each DType
-   also still needs one compiled j_instr-list entry per constructor, keyed
-   by the constructor's own name -- ast_to_elam's Pack case
-   (`app_constr (EVar name) ...`) references a constructor exactly like
-   any other free variable, so a later definition's `Pair(a, b)` compiles
-   down to an ID "Pair" that the assembly step needs to resolve against
-   *something* in this cache, the same as any other name. Each ordinary
-   definition is type-checked against the term environment accumulated so
-   far -- extending it via the same generalize-and-Env.add logic infer's
-   ELet case already uses, just lifted across separate top-level calls --
-   then compiled on its own (def_to_elam's extraction) down to a j_instr
-   list, with ID <name> standing in for each free variable. Nothing is
-   rendered to C text here; that's the assembly/linking step below.
-   Returns the final type environment alongside the cache, since the
-   assembly step still needs to type-check the program's trailing
-   expression (the entry point) against whatever every definition
-   contributed. *)
+(* Walks a Prog's definitions in source order, type-checking and compiling
+   each one on its own and caching the result under the content hash of
+   its own body. Also threads hash_env (name -> hash) through the walk,
+   extending it with each definition's name and hash. Returns the final
+   type environment, hash_env, and cache.
+
+   TODO: constructors are hashed via Serialize.encode on their LConstr
+   node, which still serializes the constructor's name as a literal
+   string (see the TODO in serialize.ml) rather than its position within
+   a canonicalized, SCC-grouped type-definition group. Real structural
+   constructor hashing is parked in PLAN.md. *)
 let inspect_defs defs =
   let typedefs = get_types defs in
   let type_env = setup_env typedefs empty_env in
-  let compile_elam elam = comb_to_j (lam_to_comb (elam_to_lam elam)) in
-  let rec walk defs env acc =
+  let compile_elam elam =
+    let lam = elam_to_lam elam in
+    (lam, comb_to_j (lam_to_comb lam))
+  in
+  let hash_of lam hash_env =
+    let free_map name = List.assoc name hash_env in
+    Digest.to_hex (Digest.string (Serialize.encode ~free_map lam))
+  in
+  let rec walk defs env hash_env acc =
     match defs with
-    | [] -> (env, List.rev acc)
+    | [] -> (env, List.rev hash_env, List.rev acc)
     | DType (_, constrs) :: rest ->
-        let compiled =
-          List.map
-            (fun (cname, arg_typs) ->
-              (cname, compile_elam (EConstr (cname, List.length arg_typs))))
-            constrs
+        let hash_env', acc' =
+          List.fold_left
+            (fun (hash_env, acc) (cname, arg_typs) ->
+              let lam, instrs =
+                compile_elam (EConstr (cname, List.length arg_typs))
+              in
+              let hash = hash_of lam hash_env in
+              ((cname, hash) :: hash_env, (hash, instrs) :: acc))
+            (hash_env, acc) constrs
         in
-        walk rest env (List.rev_append compiled acc)
+        walk rest env hash_env' acc'
     | d :: rest ->
         let name, elam = def_to_elam d in
         let ty = infer elam env in
         let scheme = generalize ty env in
         let env' = Env.add name scheme env in
-        walk rest env' ((name, compile_elam elam) :: acc)
+        let lam, instrs = compile_elam elam in
+        let hash = hash_of lam hash_env in
+        walk rest env' ((name, hash) :: hash_env) ((hash, instrs) :: acc)
   in
-  walk defs type_env []
+  walk defs type_env [] []
 
 module StringSet = Set.Make (String)
 
@@ -86,16 +87,19 @@ let free_refs instrs =
 (* Starting from the entry point's own free-variable references, pulls in
    whatever those names need too, transitively -- rather than a separate
    dependency-collection pass, a definition's dependency set is exactly
-   the ID occurrences already sitting in its compiled j_instr list. *)
-let dependancy_names entry_instrs cache =
+   the ID occurrences already sitting in its compiled j_instr list. Each
+   name is translated to its hash via hash_env before touching cache,
+   since cache is keyed by hash, not name. *)
+let dependancy_hashes entry_instrs cache hash_env =
   let rec go frontier seen =
     match frontier with
     | [] -> seen
     | name :: rest ->
-        if StringSet.mem name seen then go rest seen
+        let hash = List.assoc name hash_env in
+        if StringSet.mem hash seen then go rest seen
         else
-          let deps = free_refs (List.assoc name cache) in
-          go (deps @ rest) (StringSet.add name seen)
+          let deps = free_refs (List.assoc hash cache) in
+          go (deps @ rest) (StringSet.add hash seen)
   in
   go (free_refs entry_instrs) StringSet.empty
 
@@ -110,22 +114,24 @@ let dependancy_names entry_instrs cache =
    just-built graph off the stack and into its permanent globals[] slot;
    the entry point's own chunk gets no such line, so its result is exactly
    what's left on top of the stack for the runtime's reduce() to pick up.
-   The name -> globals[] index table comes from that same needed-defs
-   processing order and resolves every ID directly at render time --
-   nothing is ever rendered before every ID in it is already resolvable,
-   so there's no placeholder/substitution mechanism anywhere. *)
+   The hash -> globals[] index table comes from that same needed-defs
+   processing order; resolve first translates an ID's name to its hash
+   via hash_env, then looks up that hash's index -- resolving every ID
+   directly at render time, same as before. Nothing is ever rendered
+   before every ID in it is already resolvable, so there's no
+   placeholder/substitution mechanism anywhere. *)
 let compile_to_c ~filename ~source =
   let (Prog (defs, exp)) = parse filename source in
-  let type_env, cache = inspect_defs defs in
+  let type_env, hash_env, cache = inspect_defs defs in
   let entry_elam = ast_to_elam exp in
   let _ = infer entry_elam type_env in
   let entry_instrs = comb_to_j (lam_to_comb (elam_to_lam entry_elam)) in
-  let needed_names = dependancy_names entry_instrs cache in
+  let needed_hashes = dependancy_hashes entry_instrs cache hash_env in
   let needed_defs =
-    List.filter (fun (name, _) -> StringSet.mem name needed_names) cache
+    List.filter (fun (hash, _) -> StringSet.mem hash needed_hashes) cache
   in
-  let indices = List.mapi (fun i (name, _) -> (name, i)) needed_defs in
-  let resolve name = List.assoc name indices in
+  let indices = List.mapi (fun i (hash, _) -> (hash, i)) needed_defs in
+  let resolve name = List.assoc (List.assoc name hash_env) indices in
   let def_chunk (_, instrs) =
     build_graph resolve instrs ^ "\nglobals_push(stack_pop());"
   in
