@@ -26,8 +26,8 @@ let suite =
       "let one = 1;\nlet two = one;"
       [ ("one", [ INT 1 ]); ("two", [ ID "one" ]) ];
     Alcotest.test_case
-      "a def with its own argument still records the dependency as an ID \
-       among its compiled instructions"
+      "a def with its own argument still records the dependency as an ID among \
+       its compiled instructions"
       `Quick (fun () ->
         let result = compile "let one = 1;\ndef inc x = x + one;" in
         Alcotest.(check (list string))
@@ -36,13 +36,13 @@ let suite =
           "inc's instructions mention ID \"one\"" true
           (List.mem (ID "one") (List.assoc "inc" result)));
     check
-      "a DType with no other defs contributes one entry per constructor, \
-       not one for the type itself"
+      "a DType with no other defs contributes one entry per constructor, not \
+       one for the type itself"
       "type pair = Pair of int * int;"
       [ ("Pair", [ CONSTR (2, "Pair") ]) ];
     Alcotest.test_case
-      "a later def's use of a constructor records it as a dependency, \
-       same as any other free variable"
+      "a later def's use of a constructor records it as a dependency, same as \
+       any other free variable"
       `Quick (fun () ->
         let result =
           compile "type pair = Pair of int * int;\ndef mk a b = Pair (a, b);"
@@ -53,8 +53,8 @@ let suite =
           "mk's instructions mention ID \"Pair\"" true
           (List.mem (ID "Pair") (List.assoc "mk" result)));
     Alcotest.test_case
-      "referencing an undefined name raises the same Type_error infer \
-       already raises for an unbound variable"
+      "referencing an undefined name raises the same Type_error infer already \
+       raises for an unbound variable"
       `Quick (fun () ->
         Alcotest.check_raises "unbound"
           (Type_infer.Type_error "Unbound variable: undefined") (fun () ->
