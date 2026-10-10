@@ -11,6 +11,7 @@ let rec list_to_cons list =
 let rec ast_to_elam ast =
   match ast with
   | Var x -> EVar x
+  | Ref _ -> failwith "ast_to_elam: Ref only appears in recovered source"
   | Int n -> EInt n
   | Bool b -> EBool b
   | Empty -> EEmpty

@@ -2,23 +2,19 @@ open Compiler
 open Ast
 open J_machine
 
-(* Exercises Driver.inspect_defs: the hash-keyed bottom-up walk that
-   type-checks and compiles each top-level definition on its own, caching
-   its j_instr list (with ID <name> for every free variable) under the
-   hash of its own body rather than its name, so that two
-   differently-named, identically-bodied definitions share one cache
-   entry. *)
+(* Exercises Driver.inspect_defs: type-checks and compiles each
+   top-level definition on its own, keyed by the hash of its own body. *)
 
 let instr = Alcotest.testable pp_instr ( = )
 let entries = Alcotest.(list (pair string (list instr)))
 
-(* Reconstructs a name-keyed view for assertions, via the same two-step
-   lookup compile_to_c's own `resolve` does: a name -> hash via hash_env,
-   then hash -> compiled instructions via cache. *)
+(* Reconstructs a name-keyed view for assertions. *)
 let compile src =
   let (Prog (defs, _)) = Driver.parse "test.oj" src in
-  let _, hash_env, cache = Driver.inspect_defs defs in
-  List.map (fun (name, hash) -> (name, List.assoc hash cache)) hash_env
+  let _, name_to_hash, hash_to_instrs, _ = Driver.inspect_defs defs in
+  List.map
+    (fun (name, hash) -> (name, List.assoc hash hash_to_instrs))
+    name_to_hash
 
 let check name src expected =
   Alcotest.test_case name `Quick (fun () ->
@@ -72,8 +68,49 @@ let suite =
         let (Prog (defs, _)) =
           Driver.parse "test.oj" "let a = 5;\nlet b = 5;"
         in
-        let _, hash_env, _ = Driver.inspect_defs defs in
+        let _, name_to_hash, _, _ = Driver.inspect_defs defs in
         Alcotest.(check string)
-          "a and b share a hash" (List.assoc "a" hash_env)
-          (List.assoc "b" hash_env));
+          "a and b share a hash"
+          (Hash.to_string (List.assoc "a" name_to_hash))
+          (Hash.to_string (List.assoc "b" name_to_hash)));
+    Alcotest.test_case "recovers a simple let's source" `Quick (fun () ->
+        let (Prog (defs, _)) = Driver.parse "test.oj" "let x = 5;\nx" in
+        let _, name_to_hash, _, hash_to_def = Driver.inspect_defs defs in
+        Alcotest.(check string)
+          "recovered source" "let x = 5"
+          (Recover.recover_source name_to_hash hash_to_def "x"));
+    Alcotest.test_case
+      "recovers a def referencing a forward-declared dependency, using the \
+       dependency's own name"
+      `Quick (fun () ->
+        let (Prog (defs, _)) =
+          Driver.parse "test.oj" "def inc x = x + one;\nlet one = 1;\ninc 2"
+        in
+        let _, name_to_hash, _, hash_to_def = Driver.inspect_defs defs in
+        Alcotest.(check string)
+          "recovered source" "def inc x = (x + one)"
+          (Recover.recover_source name_to_hash hash_to_def "inc"));
+    Alcotest.test_case
+      "a defrec's self-calls recover under whichever name is queried, not a \
+       different alias sharing the same hash"
+      `Quick (fun () ->
+        let (Prog (defs, _)) =
+          Driver.parse "test.oj"
+            "defrec fact n = if n == 0 then 1 else n + fact (n + -1);\n\
+             defrec fact2 n = if n == 0 then 1 else n + fact2 (n + -1);\n\
+             fact 5"
+        in
+        let _, name_to_hash, _, hash_to_def = Driver.inspect_defs defs in
+        Alcotest.(check string)
+          "fact and fact2 share a hash"
+          (Hash.to_string (List.assoc "fact" name_to_hash))
+          (Hash.to_string (List.assoc "fact2" name_to_hash));
+        Alcotest.(check string)
+          "fact's self-call recovers as \"fact\""
+          "defrec fact n = if (n == 0) then 1 else (n + (fact (n + -1)))"
+          (Recover.recover_source name_to_hash hash_to_def "fact");
+        Alcotest.(check string)
+          "fact2's self-call recovers as \"fact2\", not \"fact\""
+          "defrec fact2 n = if (n == 0) then 1 else (n + (fact2 (n + -1)))"
+          (Recover.recover_source name_to_hash hash_to_def "fact2"));
   ]

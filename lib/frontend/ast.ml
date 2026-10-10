@@ -27,6 +27,7 @@ type pat =
 
 type exp =
   | Var of string
+  | Ref of Hash.t
   | Int of int
   | Bool of bool
   | Eq of exp * exp
@@ -91,6 +92,7 @@ let pp_pats fmt ps =
 let rec pp_exp fmt e =
   match e with
   | Var x -> Format.fprintf fmt "%s" x
+  | Ref h -> Format.fprintf fmt "<%s>" (Hash.to_string h)
   | Int n -> Format.fprintf fmt "%d" n
   | Bool b -> Format.fprintf fmt "%b" b
   | Eq (a, b) -> Format.fprintf fmt "(%a == %a)" pp_exp a pp_exp b

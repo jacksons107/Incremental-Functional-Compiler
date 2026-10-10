@@ -9,15 +9,13 @@ let rec pat_vars p =
   | PCons (a, b) -> pat_vars a @ pat_vars b
   | PConstr (_, ps) -> List.concat_map pat_vars ps
 
-(* Collects every name e references that isn't currently in bound --
-   a lambda/def/defrec parameter or match-pattern variable introduced
-   within e itself. Constructor names (Pack, Constr, Unpack, IsConstr)
-   are always collected, since constructor names live in a separate,
-   unshadowable namespace from VAR-bound names. *)
+(* Every name e references that isn't in bound (a locally-bound
+   parameter or pattern variable). Constructor names are always
+   collected, regardless of bound. *)
 let rec global_refs bound e =
   match e with
   | Var x -> if List.mem x bound then [] else [ x ]
-  | Int _ | Bool _ | Empty | Fail -> []
+  | Ref _ | Int _ | Bool _ | Empty | Fail -> []
   | Eq (a, b) | Plus (a, b) | App (a, b) | Cons (a, b) ->
       global_refs bound a @ global_refs bound b
   | IsCons e | Head e | Tail e -> global_refs bound e
@@ -26,7 +24,7 @@ let rec global_refs bound e =
   | Def (f, vs, b, cont) ->
       global_refs (vs @ bound) b @ global_refs (f :: bound) cont
   | Defrec (f, vs, b, cont) ->
-      global_refs (f :: vs @ bound) b @ global_refs (f :: bound) cont
+      global_refs ((f :: vs) @ bound) b @ global_refs (f :: bound) cont
   | Match (scruts, cases) ->
       List.concat_map (global_refs bound) scruts
       @ List.concat_map
@@ -41,18 +39,59 @@ let rec global_refs bound e =
   | Unpack (c, e, _) -> c :: global_refs bound e
   | List es -> List.concat_map (global_refs bound) es
 
-(* The name(s) a top-level def introduces -- one for DLet/DDef/DDefrec,
-   one per constructor for DType. *)
+(* Rewrites e, replacing every unshadowed Var x with Ref h wherever
+   resolve x = Some h. *)
+let rec anonymize resolve bound e =
+  let go = anonymize resolve bound in
+  match e with
+  | Var x -> (
+      if List.mem x bound then e
+      else match resolve x with Some h -> Ref h | None -> e)
+  | Ref _ | Int _ | Bool _ | Empty | Fail -> e
+  | Eq (a, b) -> Eq (go a, go b)
+  | Plus (a, b) -> Plus (go a, go b)
+  | App (a, b) -> App (go a, go b)
+  | Cons (a, b) -> Cons (go a, go b)
+  | IsCons e -> IsCons (go e)
+  | Head e -> Head (go e)
+  | Tail e -> Tail (go e)
+  | IsConstr (e, c) -> IsConstr (go e, c)
+  | Let (v, b, cont) -> Let (v, go b, anonymize resolve (v :: bound) cont)
+  | Def (f, vs, b, cont) ->
+      Def
+        ( f,
+          vs,
+          anonymize resolve (vs @ bound) b,
+          anonymize resolve (f :: bound) cont )
+  | Defrec (f, vs, b, cont) ->
+      Defrec
+        ( f,
+          vs,
+          anonymize resolve ((f :: vs) @ bound) b,
+          anonymize resolve (f :: bound) cont )
+  | Match (scruts, cases) ->
+      Match
+        ( List.map go scruts,
+          List.map
+            (fun (pats, rhs) ->
+              let bound' = List.concat_map pat_vars pats @ bound in
+              (pats, anonymize resolve bound' rhs))
+            cases )
+  | If (c, t, e) -> If (go c, go t, go e)
+  | Constr (c, ts, e) -> Constr (c, ts, go e)
+  | Pack (c, args) -> Pack (c, List.map go args)
+  | Unpack (c, e, i) -> Unpack (c, go e, i)
+  | List es -> List (List.map go es)
+
+(* The name(s) a top-level def introduces. *)
 let def_provides = function
   | DLet (v, _) -> [ v ]
   | DDef (f, _, _) -> [ f ]
   | DDefrec (f, _, _) -> [ f ]
   | DType (_, constrs) -> List.map fst constrs
 
-(* The other top-level names a def's own body references, excluding
-   anything the def provides itself -- a defrec's self-reference (or a
-   plain def's invalid one) is never a real ordering dependency, since
-   neither is resolved by looking the name up among other definitions. *)
+(* The other top-level names a def's body references, excluding
+   anything the def provides itself. *)
 let def_requires d =
   let provides = def_provides d in
   let raw =
@@ -64,18 +103,17 @@ let def_requires d =
   in
   List.sort_uniq compare (List.filter (fun r -> not (List.mem r provides)) raw)
 
-(* Reorders defs into a valid dependency order via DFS: a def's
-   dependencies are visited, and so appended to the result, before the
-   def itself. Raises Mutual_recursion if DFS revisits a def that's
-   still on the active path -- a cycle spanning two or more distinct
-   defs, since def_requires already excludes self-references. *)
+(* Reorders defs so each one follows its own dependencies (DFS-based
+   topological sort). Raises Mutual_recursion on a cycle. *)
 let topo_sort (defs : def list) : def list =
   let defs_arr = Array.of_list defs in
   let n = Array.length defs_arr in
   let name_to_idx = Hashtbl.create 16 in
   Array.iteri
     (fun i d ->
-      List.iter (fun name -> Hashtbl.replace name_to_idx name i) (def_provides d))
+      List.iter
+        (fun name -> Hashtbl.replace name_to_idx name i)
+        (def_provides d))
     defs_arr;
   let state = Array.make n `Unvisited in
   let order = ref [] in

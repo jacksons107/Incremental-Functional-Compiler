@@ -31,19 +31,13 @@ let typecheck ~filename ~source =
   let elam = ast_to_elam ast_exp in
   infer elam env
 
-(* Reorders a Prog's definitions into a valid dependency order
-   (Dep_order.topo_sort), then walks them in that order, type-checking
-   and compiling each one on its own and caching the result under the
-   content hash of its own body. Also threads hash_env (name -> hash)
-   through the walk,
-   extending it with each definition's name and hash. Returns the final
-   type environment, hash_env, and cache.
+(* Reorders defs (Dep_order.topo_sort), then type-checks and compiles
+   each one, keyed by the hash of its own body rather than its name.
+   Returns the type environment, name_to_hash, hash_to_instrs, and
+   hash_to_def.
 
-   TODO: constructors are hashed via Serialize.encode on their LConstr
-   node, which still serializes the constructor's name as a literal
-   string (see the TODO in serialize.ml) rather than its position within
-   a canonicalized, SCC-grouped type-definition group. Real structural
-   constructor hashing is parked in PLAN.md. *)
+   TODO: constructor hashing is nominal, not structural -- see the TODO
+   in serialize.ml. *)
 let inspect_defs defs =
   let defs = Dep_order.topo_sort defs in
   let typedefs = get_types defs in
@@ -52,89 +46,99 @@ let inspect_defs defs =
     let lam = elam_to_lam elam in
     (lam, comb_to_j (lam_to_comb lam))
   in
-  let hash_of lam hash_env =
-    let free_map name = List.assoc name hash_env in
-    Digest.to_hex (Digest.string (Serialize.encode ~free_map lam))
+  let hash_of lam (name_to_hash : (string * Hash.t) list) : Hash.t =
+    let free_map (name : string) : string =
+      Hash.to_string (List.assoc name name_to_hash)
+    in
+    Hash.of_string
+      (Digest.to_hex (Digest.string (Serialize.encode ~free_map lam)))
   in
-  let rec walk defs env hash_env acc =
+  let rec walk defs env (name_to_hash : (string * Hash.t) list)
+      (hash_to_instrs : (Hash.t * j_instr list) list)
+      (hash_to_def : (Hash.t * def) list) =
     match defs with
-    | [] -> (env, List.rev hash_env, List.rev acc)
+    | [] -> (env, List.rev name_to_hash, List.rev hash_to_instrs, hash_to_def)
     | DType (_, constrs) :: rest ->
-        let hash_env', acc' =
+        let name_to_hash', hash_to_instrs' =
           List.fold_left
-            (fun (hash_env, acc) (cname, arg_typs) ->
+            (fun (name_to_hash, hash_to_instrs) (cname, arg_typs) ->
               let lam, instrs =
                 compile_elam (EConstr (cname, List.length arg_typs))
               in
-              let hash = hash_of lam hash_env in
-              ((cname, hash) :: hash_env, (hash, instrs) :: acc))
-            (hash_env, acc) constrs
+              let (hash : Hash.t) = hash_of lam name_to_hash in
+              ((cname, hash) :: name_to_hash, (hash, instrs) :: hash_to_instrs))
+            (name_to_hash, hash_to_instrs)
+            constrs
         in
-        walk rest env hash_env' acc'
+        walk rest env name_to_hash' hash_to_instrs' hash_to_def
     | d :: rest ->
         let name, elam = def_to_elam d in
         let ty = infer elam env in
         let scheme = generalize ty env in
         let env' = Env.add name scheme env in
         let lam, instrs = compile_elam elam in
-        let hash = hash_of lam hash_env in
-        walk rest env' ((name, hash) :: hash_env) ((hash, instrs) :: acc)
+        let (hash : Hash.t) = hash_of lam name_to_hash in
+        let resolve (n : string) : Hash.t option =
+          if n = name then Some hash else List.assoc_opt n name_to_hash
+        in
+        let anonymized_def =
+          match d with
+          | DLet (n, e) -> DLet (n, Dep_order.anonymize resolve [] e)
+          | DDef (n, vs, e) -> DDef (n, vs, Dep_order.anonymize resolve vs e)
+          | DDefrec (n, vs, e) ->
+              DDefrec (n, vs, Dep_order.anonymize resolve vs e)
+          | DType _ -> assert false
+        in
+        walk rest env'
+          ((name, hash) :: name_to_hash)
+          ((hash, instrs) :: hash_to_instrs)
+          ((hash, anonymized_def) :: hash_to_def)
   in
-  walk defs type_env [] []
+  walk defs type_env [] [] []
 
-module StringSet = Set.Make (String)
+module HashSet = Set.Make (Hash)
 
 let free_refs instrs =
   List.filter_map (function ID name -> Some name | _ -> None) instrs
 
-(* Starting from the entry point's own free-variable references, pulls in
-   whatever those names need too, transitively -- rather than a separate
-   dependency-collection pass, a definition's dependency set is exactly
-   the ID occurrences already sitting in its compiled j_instr list. Each
-   name is translated to its hash via hash_env before touching cache,
-   since cache is keyed by hash, not name. *)
-let dependancy_hashes entry_instrs cache hash_env =
+(* The hashes entry_instrs transitively needs, found by translating each
+   ID's name to its hash via name_to_hash and following hash_to_instrs. *)
+let dependancy_hashes entry_instrs
+    (hash_to_instrs : (Hash.t * j_instr list) list)
+    (name_to_hash : (string * Hash.t) list) : HashSet.t =
   let rec go frontier seen =
     match frontier with
     | [] -> seen
     | name :: rest ->
-        let hash = List.assoc name hash_env in
-        if StringSet.mem hash seen then go rest seen
+        let (hash : Hash.t) = List.assoc name name_to_hash in
+        if HashSet.mem hash seen then go rest seen
         else
-          let deps = free_refs (List.assoc hash cache) in
-          go (deps @ rest) (StringSet.add hash seen)
+          let deps = free_refs (List.assoc hash hash_to_instrs) in
+          go (deps @ rest) (HashSet.add hash seen)
   in
-  go (free_refs entry_instrs) StringSet.empty
+  go (free_refs entry_instrs) HashSet.empty
 
-(* Assembly/linking: the entry point is the program's trailing expression,
-   compiled the same way as any top-level definition's body, against the
-   final type environment the walk accumulated. Only the definitions the
-   entry point transitively needs get included -- cache is already in a
-   valid dependency order (source order), so filtering it down to the
-   needed set preserves that order with no separate topological sort.
-   Each needed definition's chunk renders its own j_instr list unmodified,
-   followed by one extra line (globals_push(stack_pop());) that moves its
-   just-built graph off the stack and into its permanent globals[] slot;
-   the entry point's own chunk gets no such line, so its result is exactly
-   what's left on top of the stack for the runtime's reduce() to pick up.
-   The hash -> globals[] index table comes from that same needed-defs
-   processing order; resolve first translates an ID's name to its hash
-   via hash_env, then looks up that hash's index -- resolving every ID
-   directly at render time, same as before. Nothing is ever rendered
-   before every ID in it is already resolvable, so there's no
-   placeholder/substitution mechanism anywhere. *)
+(* Assembly/linking: renders the entry point and every definition it
+   transitively needs to C text. resolve translates an ID's name to its
+   hash, then that hash's globals[] index. *)
 let compile_to_c ~filename ~source =
   let (Prog (defs, exp)) = parse filename source in
-  let type_env, hash_env, cache = inspect_defs defs in
+  let type_env, name_to_hash, hash_to_instrs, _ = inspect_defs defs in
   let entry_elam = ast_to_elam exp in
   let _ = infer entry_elam type_env in
   let entry_instrs = comb_to_j (lam_to_comb (elam_to_lam entry_elam)) in
-  let needed_hashes = dependancy_hashes entry_instrs cache hash_env in
-  let needed_defs =
-    List.filter (fun (hash, _) -> StringSet.mem hash needed_hashes) cache
+  let needed_hashes =
+    dependancy_hashes entry_instrs hash_to_instrs name_to_hash
   in
-  let indices = List.mapi (fun i (hash, _) -> (hash, i)) needed_defs in
-  let resolve name = List.assoc (List.assoc name hash_env) indices in
+  let needed_defs =
+    List.filter (fun (hash, _) -> HashSet.mem hash needed_hashes) hash_to_instrs
+  in
+  let hash_to_index : (Hash.t * int) list =
+    List.mapi (fun i (hash, _) -> (hash, i)) needed_defs
+  in
+  let resolve (name : string) : int =
+    List.assoc (List.assoc name name_to_hash) hash_to_index
+  in
   let def_chunk (_, instrs) =
     build_graph resolve instrs ^ "\nglobals_push(stack_pop());"
   in
