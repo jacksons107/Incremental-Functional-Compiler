@@ -30,9 +30,7 @@ _build/
 _opam/
 
 # Compiler output (generated per-invocation, not checked in)
-/generated.c
-/prog
-/hello
+/build/
 
 # Editor/IDE files
 *.swp
@@ -43,3 +41,4 @@ _opam/
 
 # AI-generated files
 PLAN.md
+TODO.md

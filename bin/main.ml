@@ -55,22 +55,26 @@ let () =
     Format.printf "%a@." Ast.pp_typ ty;
     exit 0);
 
+  let build_dir = "build" in
+  if not (Sys.file_exists build_dir) then Sys.mkdir build_dir 0o755;
+
   let out_exe =
     match !output_path with
     | Some p -> p
-    | None -> Filename.remove_extension (Filename.basename filename)
+    | None ->
+        Filename.concat build_dir
+          (Filename.remove_extension (Filename.basename filename))
   in
   let run_path =
     if Filename.is_implicit out_exe then
       Filename.concat Filename.current_dir_name out_exe
     else out_exe
   in
+  let c_file = Filename.concat build_dir "generated.c" in
 
   let entry = Driver.compile_to_c ~filename ~source:program in
-  Driver.emit_c_file ~out_path:"generated.c" ~entry_body:entry;
-  match
-    Driver.build_exe ~c_file:"generated.c" ~runtime_dir:"runtime" ~out_exe
-  with
+  Driver.emit_c_file ~out_path:c_file ~entry_body:entry;
+  match Driver.build_exe ~c_file ~runtime_dir:"runtime" ~out_exe with
   | Error msg ->
       prerr_endline msg;
       exit 1

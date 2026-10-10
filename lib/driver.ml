@@ -31,9 +31,11 @@ let typecheck ~filename ~source =
   let elam = ast_to_elam ast_exp in
   infer elam env
 
-(* Walks a Prog's definitions in source order, type-checking and compiling
-   each one on its own and caching the result under the content hash of
-   its own body. Also threads hash_env (name -> hash) through the walk,
+(* Reorders a Prog's definitions into a valid dependency order
+   (Dep_order.topo_sort), then walks them in that order, type-checking
+   and compiling each one on its own and caching the result under the
+   content hash of its own body. Also threads hash_env (name -> hash)
+   through the walk,
    extending it with each definition's name and hash. Returns the final
    type environment, hash_env, and cache.
 
@@ -43,6 +45,7 @@ let typecheck ~filename ~source =
    a canonicalized, SCC-grouped type-definition group. Real structural
    constructor hashing is parked in PLAN.md. *)
 let inspect_defs defs =
+  let defs = Dep_order.topo_sort defs in
   let typedefs = get_types defs in
   let type_env = setup_env typedefs empty_env in
   let compile_elam elam =
