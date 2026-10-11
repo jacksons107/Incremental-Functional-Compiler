@@ -11,4 +11,5 @@ let () =
       ("serialize", Test_serialize.suite);
       ("dep_order", Test_dep_order.suite);
       ("driver", Test_driver.suite);
+      ("store", Test_store.suite);
     ]
