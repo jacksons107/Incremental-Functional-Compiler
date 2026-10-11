@@ -12,4 +12,5 @@ let () =
       ("dep_order", Test_dep_order.suite);
       ("driver", Test_driver.suite);
       ("store", Test_store.suite);
+      ("project", Test_project.suite);
     ]
