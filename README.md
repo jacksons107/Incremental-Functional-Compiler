@@ -27,3 +27,16 @@ Useful flags:
 - `-o <path>` — write the executable to `<path>` instead of the derived name.
 - `-c` / `--no-run` — build only; don't run the resulting executable.
 - `-t` — type-check only; print the program's inferred type and exit (no C generated, nothing built or run).
+
+## Creating a project
+
+```sh
+dune exec bin/main.exe -- new <dir>
+```
+
+Sets up `<dir>` as a project: creates the directory if it doesn't exist,
+marks it with a `.oj-project` file, and adds an empty `.oj/store/`
+(content-addressed cache of compiled definitions) and `.oj/namespace`
+(the project's `name -> hash` mapping, a plain text file). Running it
+again on a directory that's already a project errors out instead of
+overwriting its namespace.

@@ -1,6 +1,6 @@
 open Compiler
 
-let usage_msg = "compiler [-o out] [-c] [-t] <file.oj>"
+let usage_msg = "compiler [-o out] [-c] [-t] <file.oj>\n       compiler new <dir>"
 let output_path = ref None
 let no_run = ref false
 let typecheck_only = ref false
@@ -28,6 +28,17 @@ let speclist =
   ]
 
 let () =
+  (match Sys.argv with
+  | [| _; "new"; dir |] -> (
+      match Project.create dir with
+      | () ->
+          Printf.printf "Created project at %s\n" dir;
+          exit 0
+      | exception Project.Already_a_project _ ->
+          Printf.eprintf "Error: %s is already a project\n" dir;
+          exit 1)
+  | _ -> ());
+
   Arg.parse speclist set_input usage_msg;
 
   let filename =
