@@ -14,8 +14,30 @@ let read_file path =
   close_in ch;
   s
 
+let write_file path contents =
+  let oc = open_out path in
+  output_string oc contents;
+  close_out oc
+
 let rm_rf dir =
   ignore (Sys.command (Printf.sprintf "rm -rf %s" (Filename.quote dir)))
+
+(* Links entry's C text against the real runtime, runs the resulting
+   binary, and returns its trimmed stdout. *)
+let build_and_run tmp entry =
+  let c_file = Filename.concat tmp "generated.c" in
+  Driver.emit_c_file ~out_path:c_file ~entry_body:entry;
+  let out_exe = Filename.concat tmp "prog" in
+  match Driver.build_exe ~c_file ~runtime_dir ~out_exe with
+  | Error msg -> Alcotest.fail msg
+  | Ok () ->
+      let out_file = Filename.concat tmp "stdout.txt" in
+      let cmd =
+        Printf.sprintf "%s > %s" (Filename.quote out_exe) (Filename.quote out_file)
+      in
+      let code = Sys.command cmd in
+      Alcotest.(check int) "exit code" 0 code;
+      String.trim (read_file out_file)
 
 (* Compiles a fixture through the real Driver (the same one bin/main.ml
    uses), links it with gcc against the real runtime, runs the resulting
@@ -33,22 +55,34 @@ let run_fixture name =
       Fun.protect
         ~finally:(fun () -> rm_rf tmp)
         (fun () ->
-          let entry = Driver.compile_to_c ~filename:(name ^ ".oj") ~source in
-          let c_file = Filename.concat tmp "generated.c" in
-          Driver.emit_c_file ~out_path:c_file ~entry_body:entry;
-          let out_exe = Filename.concat tmp "prog" in
-          match Driver.build_exe ~c_file ~runtime_dir ~out_exe with
-          | Error msg -> Alcotest.fail msg
-          | Ok () ->
-              let out_file = Filename.concat tmp "stdout.txt" in
-              let cmd =
-                Printf.sprintf "%s > %s" (Filename.quote out_exe)
-                  (Filename.quote out_file)
-              in
-              let code = Sys.command cmd in
-              Alcotest.(check int) (name ^ ": exit code") 0 code;
-              let actual = String.trim (read_file out_file) in
-              Alcotest.(check string) (name ^ ": stdout") expected actual))
+          Project.create tmp;
+          let oj_path = Filename.concat tmp (name ^ ".oj") in
+          write_file oj_path source;
+          let entry = Driver.compile_to_c ~filename:oj_path ~source in
+          let actual = build_and_run tmp entry in
+          Alcotest.(check string) (name ^ ": stdout") expected actual))
+
+(* A later, separate compile in the same project can reference a name
+   defined only by an earlier compile, without redeclaring it. *)
+let cross_compile_persistence =
+  Alcotest.test_case
+    "a second compile references a name only the first one defined" `Quick
+    (fun () ->
+      let tmp = Filename.temp_dir "compiler_e2e_" "" in
+      Fun.protect
+        ~finally:(fun () -> rm_rf tmp)
+        (fun () ->
+          Project.create tmp;
+          let a_path = Filename.concat tmp "a.oj" in
+          let a_source = "let one = 1;" in
+          write_file a_path a_source;
+          ignore (Driver.compile_to_c ~filename:a_path ~source:a_source);
+          let b_path = Filename.concat tmp "b.oj" in
+          let b_source = "def inc x = x + one;\ninc 41" in
+          write_file b_path b_source;
+          let entry = Driver.compile_to_c ~filename:b_path ~source:b_source in
+          let actual = build_and_run tmp entry in
+          Alcotest.(check string) "stdout" "42" actual))
 
 let suite =
   List.map run_fixture
@@ -60,5 +94,6 @@ let suite =
       "sum_type_pack_unpack";
       "separate_compilation";
     ]
+  @ [ cross_compile_persistence ]
 
 let () = Alcotest.run "compiler e2e" [ ("e2e", suite) ]

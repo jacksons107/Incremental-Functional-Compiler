@@ -32,3 +32,5 @@ let read ~root (hash : Hash.t) :
   let scheme = read_value (Filename.concat dir "type") in
   let ast = read_value (Filename.concat dir "ast") in
   (instrs, scheme, ast)
+
+let exists ~root (hash : Hash.t) : bool = Sys.file_exists (def_dir root hash)

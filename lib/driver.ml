@@ -31,28 +31,29 @@ let typecheck ~filename ~source =
   let elam = ast_to_elam ast_exp in
   infer elam env
 
-(* Reorders defs (Dep_order.topo_sort), then type-checks and compiles
-   each one, keyed by the hash of its own body rather than its name.
-   Returns the type environment, name_to_hash, hash_to_instrs, and
-   hash_to_def.
-
-   name_to_hash seeds the walk with entries already known (e.g. from a
-   project's persisted namespace), so a def can resolve against a name
-   that isn't in defs itself.
+(* Type-checks and compiles each def, keyed by the hash of its own
+   body. seed is prior (env, name_to_hash, hash_to_instrs, hash_to_def)
+   state to build on. store_lookup/store_save read and write a def's
+   compiled result by hash.
 
    TODO: constructor hashing is nominal, not structural -- see the TODO
    in serialize.ml. *)
-let inspect_defs ~name_to_hash defs =
+let inspect_defs ~seed ~store_lookup ~store_save defs =
+  let seed_env, seed_name_to_hash, seed_hash_to_instrs, seed_hash_to_def =
+    seed
+  in
   let defs = Dep_order.topo_sort defs in
   let typedefs = get_types defs in
-  let type_env = setup_env typedefs empty_env in
+  let type_env = setup_env typedefs seed_env in
   let compile_elam elam =
     let lam = elam_to_lam elam in
     (lam, comb_to_j (lam_to_comb lam))
   in
   let hash_of lam (name_to_hash : Hash.t Ordered_map.Name_map.t) : Hash.t =
     let free_map (name : string) : string =
-      Hash.to_string (Option.get (Ordered_map.Name_map.find_opt name name_to_hash))
+      match Ordered_map.Name_map.find_opt name name_to_hash with
+      | Some h -> Hash.to_string h
+      | None -> raise (Type_error ("Unbound variable: " ^ name))
     in
     Hash.of_string
       (Digest.to_hex (Digest.string (Serialize.encode ~free_map lam)))
@@ -78,39 +79,78 @@ let inspect_defs ~name_to_hash defs =
         walk rest env name_to_hash' hash_to_instrs' hash_to_def
     | d :: rest ->
         let name, elam = def_to_elam d in
-        let ty = infer elam env in
-        let scheme = generalize ty env in
-        let env' = Env.add name scheme env in
-        let lam, instrs = compile_elam elam in
+        let lam = elam_to_lam elam in
         let (hash : Hash.t) = hash_of lam name_to_hash in
-        let resolve (n : string) : Hash.t option =
-          if n = name then Some hash
-          else Ordered_map.Name_map.find_opt n name_to_hash
-        in
-        let anonymized_def =
-          match d with
-          | DLet (n, e) -> DLet (n, Dep_order.anonymize resolve [] e)
-          | DDef (n, vs, e) -> DDef (n, vs, Dep_order.anonymize resolve vs e)
-          | DDefrec (n, vs, e) ->
-              DDefrec (n, vs, Dep_order.anonymize resolve vs e)
-          | DType _ -> assert false
-        in
-        walk rest env'
-          (Ordered_map.Name_map.set name hash name_to_hash)
-          (Ordered_map.Hash_map.set hash instrs hash_to_instrs)
-          (Ordered_map.Hash_map.set hash anonymized_def hash_to_def)
+        (match store_lookup hash with
+        | Some (cached_instrs, cached_scheme, cached_def) ->
+            let env' = Env.add name cached_scheme env in
+            walk rest env'
+              (Ordered_map.Name_map.set name hash name_to_hash)
+              (Ordered_map.Hash_map.set hash cached_instrs hash_to_instrs)
+              (Ordered_map.Hash_map.set hash cached_def hash_to_def)
+        | None ->
+            let ty = infer elam env in
+            let scheme = generalize ty env in
+            let env' = Env.add name scheme env in
+            let instrs = comb_to_j (lam_to_comb lam) in
+            let resolve (n : string) : Hash.t option =
+              if n = name then Some hash
+              else Ordered_map.Name_map.find_opt n name_to_hash
+            in
+            let anonymized_def =
+              match d with
+              | DLet (n, e) -> DLet (n, Dep_order.anonymize resolve [] e)
+              | DDef (n, vs, e) ->
+                  DDef (n, vs, Dep_order.anonymize resolve vs e)
+              | DDefrec (n, vs, e) ->
+                  DDefrec (n, vs, Dep_order.anonymize resolve vs e)
+              | DType _ -> assert false
+            in
+            store_save hash instrs scheme anonymized_def;
+            walk rest env'
+              (Ordered_map.Name_map.set name hash name_to_hash)
+              (Ordered_map.Hash_map.set hash instrs hash_to_instrs)
+              (Ordered_map.Hash_map.set hash anonymized_def hash_to_def))
   in
-  walk defs type_env name_to_hash Ordered_map.Hash_map.empty
-    Ordered_map.Hash_map.empty
+  walk defs type_env seed_name_to_hash seed_hash_to_instrs seed_hash_to_def
 
-(* Seeds inspect_defs's walk from root's persisted namespace, then
-   appends whichever names are new or changed back to it. *)
+exception Constructors_not_supported_in_project
+
+(* Seeds inspect_defs from root's namespace and store, then appends
+   any new or changed names back to the namespace. Raises
+   Constructors_not_supported_in_project if defs contains a DType,
+   since constructors are never written to the store. *)
 let inspect_defs_in_project ~root defs =
-  let seed = Namespace.read (Project.namespace_path root) in
-  let result = inspect_defs ~name_to_hash:seed defs in
+  if List.exists (function DType _ -> true | _ -> false) defs then
+    raise Constructors_not_supported_in_project;
+  let store_root = Project.store_path root in
+  let seed_name_to_hash = Namespace.read (Project.namespace_path root) in
+  let seed_env, seed_hash_to_instrs, seed_hash_to_def =
+    List.fold_left
+      (fun (env, hash_to_instrs, hash_to_def) (name, hash) ->
+        let instrs, scheme, def = Store.read ~root:store_root hash in
+        ( Env.add name scheme env,
+          Ordered_map.Hash_map.set hash instrs hash_to_instrs,
+          Ordered_map.Hash_map.set hash def hash_to_def ))
+      (empty_env, Ordered_map.Hash_map.empty, Ordered_map.Hash_map.empty)
+      (Ordered_map.Name_map.to_list seed_name_to_hash)
+  in
+  let store_lookup (hash : Hash.t) =
+    if Store.exists ~root:store_root hash then
+      Some (Store.read ~root:store_root hash)
+    else None
+  in
+  let store_save hash instrs scheme def =
+    Store.write ~root:store_root hash instrs scheme def
+  in
+  let result =
+    inspect_defs
+      ~seed:(seed_env, seed_name_to_hash, seed_hash_to_instrs, seed_hash_to_def)
+      ~store_lookup ~store_save defs
+  in
   let _, name_to_hash, _, _ = result in
   Namespace.append (Project.namespace_path root)
-    (Ordered_map.Name_map.diff seed name_to_hash);
+    (Ordered_map.Name_map.diff seed_name_to_hash name_to_hash);
   result
 
 module HashSet = Set.Make (Hash)
@@ -145,8 +185,9 @@ let dependancy_hashes entry_instrs
    hash, then that hash's globals[] index. *)
 let compile_to_c ~filename ~source =
   let (Prog (defs, exp)) = parse filename source in
+  let root = Project.root_of filename in
   let type_env, name_to_hash, hash_to_instrs, _ =
-    inspect_defs ~name_to_hash:Ordered_map.Name_map.empty defs
+    inspect_defs_in_project ~root defs
   in
   let entry_elam = ast_to_elam exp in
   let _ = infer entry_elam type_env in
