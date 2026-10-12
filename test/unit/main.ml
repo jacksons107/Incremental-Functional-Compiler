@@ -9,6 +9,7 @@ let () =
       ("lam_to_comb", Test_lam_to_comb.suite);
       ("comb_to_j", Test_comb_to_j.suite);
       ("serialize", Test_serialize.suite);
+      ("ordered_map", Test_ordered_map.suite);
       ("dep_order", Test_dep_order.suite);
       ("driver", Test_driver.suite);
       ("store", Test_store.suite);

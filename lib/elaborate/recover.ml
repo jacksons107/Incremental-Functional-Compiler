@@ -1,9 +1,12 @@
 open Ast
 
 (* Finds a name currently mapping to hash in name_to_hash. *)
-let name_for_hash (name_to_hash : (string * Hash.t) list) (h : Hash.t) : string
-    =
-  fst (List.find (fun (_, h') -> Hash.equal h' h) name_to_hash)
+let name_for_hash (name_to_hash : Hash.t Ordered_map.Name_map.t) (h : Hash.t) :
+    string =
+  fst
+    (List.find
+       (fun (_, h') -> Hash.equal h' h)
+       (Ordered_map.Name_map.to_list name_to_hash))
 
 (* Rewrites e, replacing every Ref h with Var (resolve_ref h). *)
 let rec resolve_refs (resolve_ref : Hash.t -> string) e =
@@ -34,10 +37,12 @@ let rec resolve_refs (resolve_ref : Hash.t -> string) e =
    name's own hash resolves back to name itself, not name_for_hash's
    arbitrary pick -- so a defrec's self-calls recover under the name
    just asked for, not a different alias sharing the same hash. *)
-let recover_source (name_to_hash : (string * Hash.t) list)
-    (hash_to_def : (Hash.t * def) list) (name : string) : string =
-  let (hash : Hash.t) = List.assoc name name_to_hash in
-  let stored = List.assoc hash hash_to_def in
+let recover_source (name_to_hash : Hash.t Ordered_map.Name_map.t)
+    (hash_to_def : def Ordered_map.Hash_map.t) (name : string) : string =
+  let (hash : Hash.t) =
+    Option.get (Ordered_map.Name_map.find_opt name name_to_hash)
+  in
+  let stored = Option.get (Ordered_map.Hash_map.find_opt hash hash_to_def) in
   let resolve_ref (h : Hash.t) : string =
     if Hash.equal h hash then name else name_for_hash name_to_hash h
   in

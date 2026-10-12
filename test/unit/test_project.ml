@@ -57,7 +57,9 @@ let check_create =
         (Sys.file_exists (Project.namespace_path root));
       Alcotest.(check int)
         "namespace starts empty" 0
-        (List.length (Namespace.read (Project.namespace_path root))))
+        (List.length
+           (Ordered_map.Name_map.to_list
+              (Namespace.read (Project.namespace_path root)))))
 
 let check_create_twice =
   Alcotest.test_case "creating an already-a-project dir raises" `Quick

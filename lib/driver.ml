@@ -36,9 +36,13 @@ let typecheck ~filename ~source =
    Returns the type environment, name_to_hash, hash_to_instrs, and
    hash_to_def.
 
+   name_to_hash seeds the walk with entries already known (e.g. from a
+   project's persisted namespace), so a def can resolve against a name
+   that isn't in defs itself.
+
    TODO: constructor hashing is nominal, not structural -- see the TODO
    in serialize.ml. *)
-let inspect_defs defs =
+let inspect_defs ~name_to_hash defs =
   let defs = Dep_order.topo_sort defs in
   let typedefs = get_types defs in
   let type_env = setup_env typedefs empty_env in
@@ -46,18 +50,18 @@ let inspect_defs defs =
     let lam = elam_to_lam elam in
     (lam, comb_to_j (lam_to_comb lam))
   in
-  let hash_of lam (name_to_hash : (string * Hash.t) list) : Hash.t =
+  let hash_of lam (name_to_hash : Hash.t Ordered_map.Name_map.t) : Hash.t =
     let free_map (name : string) : string =
-      Hash.to_string (List.assoc name name_to_hash)
+      Hash.to_string (Option.get (Ordered_map.Name_map.find_opt name name_to_hash))
     in
     Hash.of_string
       (Digest.to_hex (Digest.string (Serialize.encode ~free_map lam)))
   in
-  let rec walk defs env (name_to_hash : (string * Hash.t) list)
-      (hash_to_instrs : (Hash.t * j_instr list) list)
-      (hash_to_def : (Hash.t * def) list) =
+  let rec walk defs env (name_to_hash : Hash.t Ordered_map.Name_map.t)
+      (hash_to_instrs : j_instr list Ordered_map.Hash_map.t)
+      (hash_to_def : def Ordered_map.Hash_map.t) =
     match defs with
-    | [] -> (env, List.rev name_to_hash, List.rev hash_to_instrs, hash_to_def)
+    | [] -> (env, name_to_hash, hash_to_instrs, hash_to_def)
     | DType (_, constrs) :: rest ->
         let name_to_hash', hash_to_instrs' =
           List.fold_left
@@ -66,7 +70,8 @@ let inspect_defs defs =
                 compile_elam (EConstr (cname, List.length arg_typs))
               in
               let (hash : Hash.t) = hash_of lam name_to_hash in
-              ((cname, hash) :: name_to_hash, (hash, instrs) :: hash_to_instrs))
+              ( Ordered_map.Name_map.set cname hash name_to_hash,
+                Ordered_map.Hash_map.set hash instrs hash_to_instrs ))
             (name_to_hash, hash_to_instrs)
             constrs
         in
@@ -79,7 +84,8 @@ let inspect_defs defs =
         let lam, instrs = compile_elam elam in
         let (hash : Hash.t) = hash_of lam name_to_hash in
         let resolve (n : string) : Hash.t option =
-          if n = name then Some hash else List.assoc_opt n name_to_hash
+          if n = name then Some hash
+          else Ordered_map.Name_map.find_opt n name_to_hash
         in
         let anonymized_def =
           match d with
@@ -90,11 +96,22 @@ let inspect_defs defs =
           | DType _ -> assert false
         in
         walk rest env'
-          ((name, hash) :: name_to_hash)
-          ((hash, instrs) :: hash_to_instrs)
-          ((hash, anonymized_def) :: hash_to_def)
+          (Ordered_map.Name_map.set name hash name_to_hash)
+          (Ordered_map.Hash_map.set hash instrs hash_to_instrs)
+          (Ordered_map.Hash_map.set hash anonymized_def hash_to_def)
   in
-  walk defs type_env [] [] []
+  walk defs type_env name_to_hash Ordered_map.Hash_map.empty
+    Ordered_map.Hash_map.empty
+
+(* Seeds inspect_defs's walk from root's persisted namespace, then
+   appends whichever names are new or changed back to it. *)
+let inspect_defs_in_project ~root defs =
+  let seed = Namespace.read (Project.namespace_path root) in
+  let result = inspect_defs ~name_to_hash:seed defs in
+  let _, name_to_hash, _, _ = result in
+  Namespace.append (Project.namespace_path root)
+    (Ordered_map.Name_map.diff seed name_to_hash);
+  result
 
 module HashSet = Set.Make (Hash)
 
@@ -104,16 +121,21 @@ let free_refs instrs =
 (* The hashes entry_instrs transitively needs, found by translating each
    ID's name to its hash via name_to_hash and following hash_to_instrs. *)
 let dependancy_hashes entry_instrs
-    (hash_to_instrs : (Hash.t * j_instr list) list)
-    (name_to_hash : (string * Hash.t) list) : HashSet.t =
+    (hash_to_instrs : j_instr list Ordered_map.Hash_map.t)
+    (name_to_hash : Hash.t Ordered_map.Name_map.t) : HashSet.t =
   let rec go frontier seen =
     match frontier with
     | [] -> seen
     | name :: rest ->
-        let (hash : Hash.t) = List.assoc name name_to_hash in
+        let (hash : Hash.t) =
+          Option.get (Ordered_map.Name_map.find_opt name name_to_hash)
+        in
         if HashSet.mem hash seen then go rest seen
         else
-          let deps = free_refs (List.assoc hash hash_to_instrs) in
+          let deps =
+            free_refs
+              (Option.get (Ordered_map.Hash_map.find_opt hash hash_to_instrs))
+          in
           go (deps @ rest) (HashSet.add hash seen)
   in
   go (free_refs entry_instrs) HashSet.empty
@@ -123,7 +145,9 @@ let dependancy_hashes entry_instrs
    hash, then that hash's globals[] index. *)
 let compile_to_c ~filename ~source =
   let (Prog (defs, exp)) = parse filename source in
-  let type_env, name_to_hash, hash_to_instrs, _ = inspect_defs defs in
+  let type_env, name_to_hash, hash_to_instrs, _ =
+    inspect_defs ~name_to_hash:Ordered_map.Name_map.empty defs
+  in
   let entry_elam = ast_to_elam exp in
   let _ = infer entry_elam type_env in
   let entry_instrs = comb_to_j (lam_to_comb (elam_to_lam entry_elam)) in
@@ -131,13 +155,17 @@ let compile_to_c ~filename ~source =
     dependancy_hashes entry_instrs hash_to_instrs name_to_hash
   in
   let needed_defs =
-    List.filter (fun (hash, _) -> HashSet.mem hash needed_hashes) hash_to_instrs
+    List.filter
+      (fun (hash, _) -> HashSet.mem hash needed_hashes)
+      (Ordered_map.Hash_map.to_list hash_to_instrs)
   in
   let hash_to_index : (Hash.t * int) list =
     List.mapi (fun i (hash, _) -> (hash, i)) needed_defs
   in
   let resolve (name : string) : int =
-    List.assoc (List.assoc name name_to_hash) hash_to_index
+    List.assoc
+      (Option.get (Ordered_map.Name_map.find_opt name name_to_hash))
+      hash_to_index
   in
   let def_chunk (_, instrs) =
     build_graph resolve instrs ^ "\nglobals_push(stack_pop());"

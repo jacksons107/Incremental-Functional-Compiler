@@ -47,5 +47,5 @@ let create (root : string) : unit =
     mkdir_recursive root;
     touch (Filename.concat root marker_name);
     mkdir_recursive (store_path root);
-    Namespace.write (namespace_path root) []
+    Namespace.create (namespace_path root)
   end
