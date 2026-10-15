@@ -77,6 +77,26 @@ let suite =
            Pack ("Box", [ List [ Int 1; Int 2; Int 3 ] ]) ));
     check "bare nullary constructor reference" "type nullary = Nil;\nNil"
       (Prog ([ DType ("nullary", [ ("Nil", []) ]) ], Pack ("Nil", [])));
+    check "a type's constructor can reference the type's own name"
+      "type intlist = Nil | Cons of int * intlist;\n0"
+      (Prog
+         ( [
+             DType
+               ("intlist", [ ("Nil", []); ("Cons", [ TInt; TConstr "intlist" ]) ]);
+           ],
+           Int 0 ));
+    check "two types can reference each other regardless of order"
+      "type even_list = ENil | ECons of int * odd_list;\n\
+       type odd_list = OCons of int * even_list;\n\
+       0"
+      (Prog
+         ( [
+             DType
+               ( "even_list",
+                 [ ("ENil", []); ("ECons", [ TInt; TConstr "odd_list" ]) ] );
+             DType ("odd_list", [ ("OCons", [ TInt; TConstr "even_list" ]) ]);
+           ],
+           Int 0 ));
     check "head builtin" "head [1,2]" (Prog ([], Head (List [ Int 1; Int 2 ])));
     check "tail builtin" "tail [1,2]" (Prog ([], Tail (List [ Int 1; Int 2 ])));
     check_syntax_error "malformed input raises Parser.Error" "let x = ;";

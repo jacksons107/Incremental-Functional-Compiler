@@ -6,6 +6,7 @@ let () =
       ("desugar", Test_desugar.suite);
       ("patterns", Test_patterns.suite);
       ("type_infer", Test_type_infer.suite);
+      ("typecheck", Test_typecheck.suite);
       ("lam_to_comb", Test_lam_to_comb.suite);
       ("comb_to_j", Test_comb_to_j.suite);
       ("serialize", Test_serialize.suite);

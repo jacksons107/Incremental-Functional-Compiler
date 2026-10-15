@@ -62,6 +62,7 @@ typ:
     | TYPINT {TInt}
     | TYPBOOL {TBool}
     | TYPSTRING {TString}
+    | n = VAR {TConstr n}
     | t = typ; TYPLIST {TList t}
     | LPAREN; t = typ; RPAREN {t}
 

@@ -53,6 +53,33 @@ let check_raises_type_error name e =
 
 let box_env = setup_env [ TypeDef ("box", "Box", [ TInt ]) ] empty_env
 
+let intlist_env =
+  setup_env
+    [
+      TypeDef ("intlist", "Nil", []);
+      TypeDef ("intlist", "Cons", [ TInt; TConstr "intlist" ]);
+    ]
+    empty_env
+
+let cons_1_nil =
+  EApp (EApp (EConstr ("Cons", 2), EInt 1), EConstr ("Nil", 0))
+
+let mutual_env order =
+  let even_defs =
+    [
+      TypeDef ("even_list", "ENil", []);
+      TypeDef ("even_list", "ECons", [ TInt; TConstr "odd_list" ]);
+    ]
+  in
+  let odd_defs = [ TypeDef ("odd_list", "OCons", [ TInt; TConstr "even_list" ]) ] in
+  setup_env (match order with `EvenFirst -> even_defs @ odd_defs | `OddFirst -> odd_defs @ even_defs)
+    empty_env
+
+let econs_1_ocons_2_enil =
+  EApp
+    ( EApp (EConstr ("ECons", 2), EInt 1),
+      EApp (EApp (EConstr ("OCons", 2), EInt 2), EConstr ("ENil", 0)) )
+
 let suite =
   [
     check "int literal" (EInt 5) TInt;
@@ -97,6 +124,24 @@ let suite =
       box_env
       (EUnpack ("Box", EApp (EConstr ("Box", 1), EInt 5), 0))
       TInt;
+    check_env "a self-referential constructor's function type includes its \
+               own type"
+      intlist_env (EConstr ("Cons", 2))
+      (TLam (TInt, TLam (TConstr "intlist", TConstr "intlist")));
+    check_env "a value built from a self-referential constructor has the \
+               recursive type"
+      intlist_env cons_1_nil (TConstr "intlist");
+    check_env "unpacking a self-referential constructor's recursive field \
+               yields the recursive type"
+      intlist_env
+      (EUnpack ("Cons", cons_1_nil, 1))
+      (TConstr "intlist");
+    check_env "two mutually-referencing types type-check (even declared \
+               first)"
+      (mutual_env `EvenFirst) econs_1_ocons_2_enil (TConstr "even_list");
+    check_env "two mutually-referencing types type-check regardless of \
+               declaration order (odd declared first)"
+      (mutual_env `OddFirst) econs_1_ocons_2_enil (TConstr "even_list");
     check_raises_type_error "applying an int as a function is a type error"
       (EApp (EInt 1, EInt 2));
     check_raises_type_error "self-application (\\x -> x x) is an infinite type"
